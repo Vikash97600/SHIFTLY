@@ -19,8 +19,19 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from accounts.views import (
+    LandingPageView, LoginPageView, RegisterPageView,
+    AboutPageView, ContactPageView, LogoutPageView
+)
 
 urlpatterns = [
+    path("", LandingPageView.as_view(), name="landing"),
+    path("login/", LoginPageView.as_view(), name="login_page"),
+    path("register/", RegisterPageView.as_view(), name="register_page"),
+    path("about/", AboutPageView.as_view(), name="about_page"),
+    path("contact/", ContactPageView.as_view(), name="contact_page"),
+    path("logout/", LogoutPageView.as_view(), name="logout_page"),
+
     path("admin/", admin.site.urls),
     path("api/v1/accounts/", include("accounts.urls")),
     path("api/v1/students/", include("students.urls")),

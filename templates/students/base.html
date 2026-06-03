@@ -104,6 +104,11 @@
                 <a href="{% url 'student_notifications' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_notifications' %}active{% endif %}">
                     <i class="bi bi-bell-fill"></i> Notifications
                 </a>
+                {% if request.user.role == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}" class="sidebar-link text-warning">
+                    <i class="bi bi-shield-lock-fill text-warning"></i> Admin Center
+                </a>
+                {% endif %}
             </nav>
         </div>
 
@@ -117,8 +122,8 @@
                     <small class="text-muted"><i class="bi bi-shield-fill-check text-success"></i> Score: {{ request.user.student_profile.reputation_score }}</small>
                 </div>
             </div>
-            <!-- Logout route (using standard django path if configured, or root landing) -->
-            <a href="/" class="btn btn-outline-danger btn-sm w-100 rounded-pill"><i class="bi bi-box-arrow-left"></i> Log Out</a>
+            <!-- Logout route -->
+            <a href="{% url 'logout_page' %}" class="btn btn-outline-danger btn-sm w-100 rounded-pill"><i class="bi bi-box-arrow-left"></i> Log Out</a>
         </div>
     </aside>
 

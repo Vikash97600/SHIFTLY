@@ -128,3 +128,125 @@ class AuthenticationTests(APITestCase):
         # 4. Business authenticating requests Student Profile -> Forbidden
         response = self.client.get(self.student_profile_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+from django.test import TestCase, Client
+from django.urls import reverse
+
+class HTMLAuthenticationTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user_model = get_user_model()
+
+    def test_landing_page_loads(self):
+        response = self.client.get(reverse('landing'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'landing.html')
+
+    def test_login_page_loads(self):
+        response = self.client.get(reverse('login_page'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'login.html')
+
+    def test_register_page_loads(self):
+        response = self.client.get(reverse('register_page'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'register.html')
+
+    def test_about_page_loads(self):
+        response = self.client.get(reverse('about_page'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'about.html')
+
+    def test_contact_page_loads(self):
+        response = self.client.get(reverse('contact_page'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'contact.html')
+
+    def test_html_registration_student(self):
+        post_data = {
+            "email": "teststudent@shiftly.com",
+            "role": "student",
+            "first_name": "Sarah",
+            "last_name": "Smith",
+            "password": "strongpassword123",
+            "confirm_password": "strongpassword123"
+        }
+        response = self.client.post(reverse('register_page'), post_data)
+        # Check redirection to student dashboard
+        self.assertRedirects(response, reverse('student_dashboard'))
+        
+        # Check user and student profile creation
+        user = self.user_model.objects.get(email="teststudent@shiftly.com")
+        self.assertEqual(user.role, "student")
+        self.assertTrue(StudentProfile.objects.filter(user=user).exists())
+        self.assertEqual(user.student_profile.first_name, "Sarah")
+
+    def test_html_registration_business(self):
+        post_data = {
+            "email": "testbusiness@shiftly.com",
+            "role": "business",
+            "company_name": "Red Coffee Corp",
+            "password": "strongpassword123",
+            "confirm_password": "strongpassword123"
+        }
+        response = self.client.post(reverse('register_page'), post_data)
+        # Check redirection to business dashboard
+        self.assertRedirects(response, reverse('business_dashboard'))
+        
+        # Check user and business profile creation
+        user = self.user_model.objects.get(email="testbusiness@shiftly.com")
+        self.assertEqual(user.role, "business")
+        self.assertTrue(BusinessProfile.objects.filter(user=user).exists())
+        self.assertEqual(user.business_profile.company_name, "Red Coffee Corp")
+
+    def test_html_login_redirect_student(self):
+        # Create user first
+        user = self.user_model.objects.create_user(
+            email="sarah@shiftly.com",
+            password="strongpassword123",
+            role="student"
+        )
+        StudentProfile.objects.create(user=user, first_name="Sarah", last_name="Smith")
+
+        # Login
+        post_data = {
+            "email": "sarah@shiftly.com",
+            "password": "strongpassword123"
+        }
+        response = self.client.post(reverse('login_page'), post_data)
+        self.assertRedirects(response, reverse('student_dashboard'))
+
+    def test_html_login_redirect_business(self):
+        # Create user first
+        user = self.user_model.objects.create_user(
+            email="redcoffee@shiftly.com",
+            password="strongpassword123",
+            role="business"
+        )
+        BusinessProfile.objects.create(user=user, company_name="Red Coffee")
+
+        # Login
+        post_data = {
+            "email": "redcoffee@shiftly.com",
+            "password": "strongpassword123"
+        }
+        response = self.client.post(reverse('login_page'), post_data)
+        self.assertRedirects(response, reverse('business_dashboard'))
+
+    def test_html_logout_destroys_session(self):
+        user = self.user_model.objects.create_user(
+            email="testuser@shiftly.com",
+            password="strongpassword123",
+            role="student"
+        )
+        StudentProfile.objects.create(user=user, first_name="Sarah", last_name="Smith")
+
+        self.client.login(email="testuser@shiftly.com", password="strongpassword123")
+        response = self.client.get(reverse('logout_page'))
+        self.assertRedirects(response, reverse('landing'))
+        
+        # Verify user is logged out (dashboard requires login redirect to /login/ with ?next=...)
+        dashboard_response = self.client.get(reverse('student_dashboard'))
+        self.assertRedirects(dashboard_response, f"{reverse('login_page')}?next={reverse('student_dashboard')}")
+

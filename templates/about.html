@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - SHIFTLY</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 100px;
+        }
+
+        .about-header {
+            position: relative;
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .about-glow {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 65, 108, 0.05) 0%, rgba(255, 65, 108, 0) 70%);
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top py-3 transition-smooth bg-dark bg-opacity-70 backdrop-blur" style="border-bottom: 1px solid var(--dark-border);">
+        <div class="container">
+            <a class="navbar-brand text-gradient-coral" href="{% url 'landing' %}"><i class="bi bi-lightning-charge-fill"></i> SHIFTLY</a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'landing' %}#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'landing' %}#how-it-works">How It Works</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'landing' %}#faq">FAQ</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'about_page' %}">About Us</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'contact_page' %}">Contact</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.role == 'student' %}
+                            <a href="{% url 'student_dashboard' %}" class="btn btn-premium-coral">Dashboard</a>
+                        {% elif request.user.role == 'business' %}
+                            <a href="{% url 'business_dashboard' %}" class="btn btn-premium-coral">Dashboard</a>
+                        {% elif request.user.role == 'admin' %}
+                            <a href="{% url 'admin_dashboard' %}" class="btn btn-premium-coral">Admin Panel</a>
+                        {% endif %}
+                        <a href="{% url 'logout_page' %}" class="btn btn-premium-outline">Log Out</a>
+                    {% else %}
+                        <a href="{% url 'login_page' %}" class="btn btn-premium-outline">Login</a>
+                        <a href="{% url 'register_page' %}" class="btn btn-premium-coral">Sign Up</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HEADER -->
+    <header class="about-header">
+        <div class="about-glow"></div>
+        <div class="container relative z-1">
+            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2 mb-3 fs-6 border border-danger border-opacity-10"><i class="bi bi-info-circle"></i> Our Vision</span>
+            <h1 class="display-4 text-white mb-3">Redefining <span class="text-gradient-coral">Hourly Staffing</span></h1>
+            <p class="lead text-muted max-w-600 mx-auto">
+                SHIFTLY is on a mission to connect local student workers with nearby business opportunities instantly. By replacing traditional application processes with intuitive swipe matches, we make working flexible and staffing stress-free.
+            </p>
+        </div>
+    </header>
+
+    <!-- CONTENT -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row g-5">
+                <div class="col-lg-6">
+                    <h3 class="text-white mb-4">Why SHIFTLY?</h3>
+                    <p class="text-muted">
+                        Traditional job applications are slow and outdated. Students need quick gigs to support their education, and businesses face sudden shift shortages. SHIFTLY fills this gap by introducing a Tinder-style matching platform built on speed, trust, and transparency.
+                    </p>
+                    <p class="text-muted">
+                        With upfront escrow financing, verified credential badges, and double-blind rating score systems, both parties are fully protected and motivated to maintain top-tier professionalism.
+                    </p>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card bg-glass border border-opacity-10 p-4">
+                        <h4 class="text-white mb-3"><i class="bi bi-shield-check text-danger"></i> Our Commitments</h4>
+                        <ul class="list-unstyled d-flex flex-column gap-3 text-muted">
+                            <li><i class="bi bi-check2 text-danger me-2"></i> <strong>Punctual Payouts:</strong> Escrow deposits guarantee weekly bank releases.</li>
+                            <li><i class="bi bi-check2 text-danger me-2"></i> <strong>Rigorous Moderation:</strong> Shifts and companies are vetted by system administrators.</li>
+                            <li><i class="bi bi-check2 text-danger me-2"></i> <strong>Aesthetic Simplicity:</strong> Simple gestures, responsive dashboard metrics, and built-in chat.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer-section mt-auto">
+        <div class="container text-center pt-4" style="border-top: 1px solid var(--dark-border);">
+            <p class="text-muted mb-0">&copy; 2026 SHIFTLY Technologies, Inc. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

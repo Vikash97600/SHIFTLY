@@ -121,7 +121,8 @@
                     <small class="text-muted">Role: Administrator</small>
                 </div>
             </div>
-            <a href="/" class="btn btn-outline-danger btn-sm w-100 rounded-pill"><i class="bi bi-box-arrow-left"></i> Exit Panel</a>
+            <!-- Exit Panel redirects to logout -->
+            <a href="{% url 'logout_page' %}" class="btn btn-outline-danger btn-sm w-100 rounded-pill"><i class="bi bi-box-arrow-left"></i> Exit Panel</a>
         </div>
     </aside>
 

@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - SHIFTLY</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 100px;
+        }
+
+        .contact-glow {
+            position: absolute;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0) 70%);
+            top: -10%;
+            right: -10%;
+            z-index: 0;
+        }
+
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(255, 65, 108, 0.15);
+            border-color: var(--primary-coral) !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contact-glow"></div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top py-3 transition-smooth bg-dark bg-opacity-70 backdrop-blur" style="border-bottom: 1px solid var(--dark-border);">
+        <div class="container">
+            <a class="navbar-brand text-gradient-coral" href="{% url 'landing' %}"><i class="bi bi-lightning-charge-fill"></i> SHIFTLY</a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'landing' %}#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'landing' %}#how-it-works">How It Works</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'landing' %}#faq">FAQ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'about_page' %}">About Us</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{% url 'contact_page' %}">Contact</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.role == 'student' %}
+                            <a href="{% url 'student_dashboard' %}" class="btn btn-premium-coral">Dashboard</a>
+                        {% elif request.user.role == 'business' %}
+                            <a href="{% url 'business_dashboard' %}" class="btn btn-premium-coral">Dashboard</a>
+                        {% elif request.user.role == 'admin' %}
+                            <a href="{% url 'admin_dashboard' %}" class="btn btn-premium-coral">Admin Panel</a>
+                        {% endif %}
+                        <a href="{% url 'logout_page' %}" class="btn btn-premium-outline">Log Out</a>
+                    {% else %}
+                        <a href="{% url 'login_page' %}" class="btn btn-premium-outline">Login</a>
+                        <a href="{% url 'register_page' %}" class="btn btn-premium-coral">Sign Up</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <section class="py-5 relative z-1">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 mb-3 fs-6 border border-primary border-opacity-10"><i class="bi bi-envelope-at"></i> Help Desk</span>
+                <h1 class="display-4 text-white mb-2">Get in <span class="text-gradient-coral">Touch</span></h1>
+                <p class="text-muted max-w-600 mx-auto">Have queries regarding shift matching, wallets, reputation scores, or badge certifications? Drop us a note!</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show bg-glass border border-opacity-10 text-light py-3 max-w-600 mx-auto mb-4" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row g-5 mt-2 justify-content-center">
+                <!-- Info Widgets -->
+                <div class="col-lg-4 order-lg-2">
+                    <div class="d-flex flex-column gap-4">
+                        <div class="card bg-glass border border-opacity-10 p-4">
+                            <h5 class="text-white mb-3"><i class="bi bi-headset text-danger"></i> Help & Support</h5>
+                            <p class="text-muted small">Our administrators and moderators are online 24/7. Average response time is under 1 hour.</p>
+                            <a href="mailto:support@shiftly.com" class="text-gradient-coral small fw-semibold text-decoration-none">support@shiftly.com</a>
+                        </div>
+                        <div class="card bg-glass border border-opacity-10 p-4">
+                            <h5 class="text-white mb-3"><i class="bi bi-geo-alt text-primary"></i> Head Office</h5>
+                            <p class="text-muted small mb-0">SHIFTLY Technologies, Inc.<br>420 Market Street, Suite 100<br>San Francisco, CA 94111</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Panel -->
+                <div class="col-lg-6 order-lg-1">
+                    <div class="card bg-glass border border-opacity-10 p-4">
+                        <form method="POST" action="">
+                            {% csrf_token %}
+
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3 mb-md-0">
+                                    <label for="id_name" class="form-label text-muted small fw-medium">Your Name</label>
+                                    {{ form.name }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="id_email" class="form-label text-muted small fw-medium">Email Address</label>
+                                    {{ form.email }}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="id_subject" class="form-label text-muted small fw-medium">Subject</label>
+                                {{ form.subject }}
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="id_message" class="form-label text-muted small fw-medium">Your Message</label>
+                                {{ form.message }}
+                            </div>
+
+                            <button type="submit" class="btn btn-premium-coral w-100 py-2.5 fs-6"><i class="bi bi-send-fill"></i> Send Message</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer-section mt-auto">
+        <div class="container text-center pt-4" style="border-top: 1px solid var(--dark-border);">
+            <p class="text-muted mb-0">&copy; 2026 SHIFTLY Technologies, Inc. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

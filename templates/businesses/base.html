@@ -102,6 +102,11 @@
                 <a href="{% url 'business_profile_edit' %}" class="sidebar-link {% if request.resolver_match.url_name == 'business_profile_edit' %}active{% endif %}">
                     <i class="bi bi-gear-fill"></i> Company Settings
                 </a>
+                {% if request.user.role == 'admin' %}
+                <a href="{% url 'admin_dashboard' %}" class="sidebar-link text-warning">
+                    <i class="bi bi-shield-lock-fill text-warning"></i> Admin Center
+                </a>
+                {% endif %}
             </nav>
         </div>
 
@@ -115,7 +120,8 @@
                     <small class="text-muted"><i class="bi bi-patch-check-fill text-success"></i> Score: {{ profile.reputation_score }}</small>
                 </div>
             </div>
-            <a href="/" class="btn btn-outline-danger btn-sm w-100 rounded-pill"><i class="bi bi-box-arrow-left"></i> Log Out</a>
+            <!-- Logout route -->
+            <a href="{% url 'logout_page' %}" class="btn btn-outline-danger btn-sm w-100 rounded-pill"><i class="bi bi-box-arrow-left"></i> Log Out</a>
         </div>
     </aside>
 
