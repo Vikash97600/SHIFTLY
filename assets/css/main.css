@@ -531,3 +531,17 @@ h1, h2, h3, h4, h5, h6, .display-font {
     box-shadow: 0 5px 15px rgba(255, 75, 43, 0.4);
 }
 
+/* --- High Visibility Contrast Overrides for Dark Backgrounds --- */
+.text-muted {
+    color: #94A3B8 !important;
+}
+
+.text-secondary {
+    color: #94A3B8 !important;
+}
+
+label.text-muted, label.text-secondary {
+    color: #94A3B8 !important;
+}
+
+
