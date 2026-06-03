@@ -127,7 +127,7 @@ class SwipeActionView(StudentRequiredMixin, View):
         job_id = request.POST.get('job_id')
         direction = request.POST.get('direction')
         
-        if direction not in ['like', 'dislike']:
+        if direction not in ['like', 'dislike', 'save']:
             return JsonResponse({'error': 'Invalid swipe direction'}, status=400)
             
         profile = get_object_or_404(StudentProfile, user=request.user)

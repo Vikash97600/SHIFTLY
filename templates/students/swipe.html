@@ -10,6 +10,31 @@
         max-width: 380px;
         margin: 0 auto;
     }
+    
+    .badge-save {
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) rotate(-5deg);
+        color: #3B82F6 !important;
+        border-color: #3B82F6 !important;
+    }
+
+    /* Swipe Simulator and card styles */
+    .swipe-card {
+        user-select: none;
+        cursor: grab;
+    }
+    .swipe-card:active {
+        cursor: grabbing;
+    }
+
+    .swipe-card.sim-swipe-up {
+        transform: translate(0, -150%) rotate(5deg);
+        opacity: 0;
+    }
+    .swipe-card.sim-swipe-up .badge-save {
+        opacity: 1;
+    }
 </style>
 {% endblock %}
 
@@ -17,7 +42,7 @@
 <div class="container-fluid p-0">
     <div class="text-center mb-5">
         <h1 class="text-white mb-1">Swipe Shifts</h1>
-        <p class="text-muted mb-0">Swipe Right <i class="bi bi-heart-fill text-success"></i> to apply or Swipe Left <i class="bi bi-x-lg text-danger"></i> to skip.</p>
+        <p class="text-muted mb-0">Use <strong>Arrow Keys</strong> (← Nope, ↑ Save, → Like) or drag the card directly!</p>
     </div>
 
     <!-- SWIPER MODULE CONTAINER -->
@@ -31,6 +56,7 @@
                     <div class="swipe-card-image" style="background-image: url('{{ job.business.company_logo_url|default:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=400&q=80' }}')">
                         <span class="swipe-card-badge badge-nope">NOPE</span>
                         <span class="swipe-card-badge badge-like">LIKE</span>
+                        <span class="swipe-card-badge badge-save">SAVED</span>
                     </div>
                     
                     <div class="swipe-card-body">
@@ -72,8 +98,9 @@
 
     {% if jobs %}
         <!-- SWIPE CONTROL BUTTONS -->
-        <div class="d-flex justify-content-center gap-4 mt-5">
+        <div class="d-flex justify-content-center align-items-center gap-4 mt-5">
             <button id="swipe-nope" class="btn btn-dark rounded-circle p-3 fs-3 border border-secondary border-opacity-10 shadow-lg text-danger" style="width: 70px; height: 70px;"><i class="bi bi-x-lg"></i></button>
+            <button id="swipe-save" class="btn btn-dark rounded-circle p-3 fs-3 border border-secondary border-opacity-10 shadow-lg text-primary" style="width: 70px; height: 70px;"><i class="bi bi-star-fill"></i></button>
             <button id="swipe-like" class="btn btn-dark rounded-circle p-3 fs-3 border border-secondary border-opacity-10 shadow-lg text-success" style="width: 70px; height: 70px;"><i class="bi bi-heart-fill"></i></button>
         </div>
     {% endif %}
@@ -110,6 +137,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const nopeBtn = document.getElementById("swipe-nope");
+        const saveBtn = document.getElementById("swipe-save");
         const likeBtn = document.getElementById("swipe-like");
         const matchModal = document.getElementById("swipe-match-modal");
         const closeSwipeModal = document.getElementById("close-swipe-modal");
@@ -132,14 +160,11 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success && data.matched) {
-                    // Populate match modal data
                     document.getElementById("modal-job-title").innerText = data.match_details.job_title;
                     document.getElementById("modal-company-name").innerText = data.match_details.company;
                     if (data.match_details.company_logo) {
                         document.getElementById("modal-company-logo").src = data.match_details.company_logo;
                     }
-                    
-                    // Show Match Modal
                     matchModal.classList.add("show-modal");
                 }
             })
@@ -153,13 +178,16 @@
 
             const jobId = activeCard.getAttribute("data-id");
 
-            // Play animation
+            // Play animation based on direction
             if (dir === "like") {
                 activeCard.classList.add("sim-swipe-right");
                 submitSwipeAction(jobId, "like");
-            } else {
+            } else if (dir === "nope") {
                 activeCard.classList.add("sim-swipe-left");
                 submitSwipeAction(jobId, "dislike");
+            } else if (dir === "save") {
+                activeCard.classList.add("sim-swipe-up");
+                submitSwipeAction(jobId, "save");
             }
 
             // Slide up the background card
@@ -171,11 +199,15 @@
                     nextCard.classList.remove("background-card");
                     nextCard.classList.add("active-card");
 
-                    // Prepare a new background card if any are left
+                    // Set next background card
                     const allCards = document.querySelectorAll(".swipe-card");
                     let foundNextBg = false;
                     allCards.forEach(c => {
-                        if (!c.classList.contains("active-card") && !c.classList.contains("sim-swipe-right") && !c.classList.contains("sim-swipe-left") && c !== nextCard) {
+                        if (!c.classList.contains("active-card") && 
+                            !c.classList.contains("sim-swipe-right") && 
+                            !c.classList.contains("sim-swipe-left") && 
+                            !c.classList.contains("sim-swipe-up") && 
+                            c !== nextCard) {
                             if (!foundNextBg) {
                                 c.classList.add("background-card");
                                 c.style.transform = "scale(0.95) translateY(12px)";
@@ -185,9 +217,12 @@
                             }
                         }
                     });
+                    
+                    // Re-initialize drag handlers on new active card
+                    initDrag(nextCard);
                 }, 150);
             } else {
-                // If this was the last card
+                // Last card cleared
                 setTimeout(() => {
                     activeCard.remove();
                     const container = document.getElementById("swiper-container");
@@ -199,12 +234,116 @@
                         </div>
                     `;
                     if (nopeBtn) nopeBtn.remove();
+                    if (saveBtn) saveBtn.remove();
                     if (likeBtn) likeBtn.remove();
                 }, 400);
             }
         }
 
+        // --- Drag Gestures Engine (Mouse & Touch) ---
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let currentY = 0;
+
+        function initDrag(card) {
+            if (!card) return;
+            
+            // Touch handlers
+            card.addEventListener("touchstart", (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY));
+            card.addEventListener("touchmove", (e) => dragMove(e.touches[0].clientX, e.touches[0].clientY, card));
+            card.addEventListener("touchend", () => endDrag(card));
+
+            // Mouse handlers
+            card.addEventListener("mousedown", (e) => {
+                e.preventDefault();
+                startDrag(e.clientX, e.clientY);
+            });
+            
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+
+            function onMouseMove(e) {
+                if (!isDragging) return;
+                dragMove(e.clientX, e.clientY, card);
+            }
+
+            function onMouseUp() {
+                if (!isDragging) return;
+                endDrag(card);
+            }
+        }
+
+        function startDrag(clientX, clientY) {
+            isDragging = true;
+            startX = clientX;
+            startY = clientY;
+        }
+
+        function dragMove(clientX, clientY, card) {
+            if (!isDragging) return;
+            currentX = clientX - startX;
+            currentY = clientY - startY;
+
+            // Calculate translation physics
+            const rotate = currentX / 10;
+            card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg)`;
+            card.style.transition = "none";
+
+            // Badges feedback opacity
+            const nopeBadge = card.querySelector(".badge-nope");
+            const likeBadge = card.querySelector(".badge-like");
+            const saveBadge = card.querySelector(".badge-save");
+
+            if (nopeBadge) nopeBadge.style.opacity = Math.max(0, -currentX / 100);
+            if (likeBadge) likeBadge.style.opacity = Math.max(0, currentX / 100);
+            if (saveBadge) saveBadge.style.opacity = Math.max(0, -currentY / 100);
+        }
+
+        function endDrag(card) {
+            isDragging = false;
+            card.style.transition = "transform 0.4s ease, opacity 0.4s";
+            
+            const threshold = 120;
+
+            if (currentX > threshold) {
+                triggerSwipe("like");
+            } else if (currentX < -threshold) {
+                triggerSwipe("nope");
+            } else if (currentY < -threshold) {
+                triggerSwipe("save");
+            } else {
+                // Snap card back to center
+                card.style.transform = "translate(0, 0) rotate(0deg)";
+                const badges = card.querySelectorAll(".swipe-card-badge");
+                badges.forEach(b => b.style.opacity = "0");
+            }
+            
+            currentX = 0;
+            currentY = 0;
+        }
+
+        // Initialize drag on active card
+        initDrag(document.querySelector(".active-card"));
+
+        // --- Keyboard Bindings Engine ---
+        document.addEventListener("keydown", (e) => {
+            // Only capture if not typing in form fields
+            if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") return;
+            
+            if (e.key === "ArrowLeft") {
+                triggerSwipe("nope");
+            } else if (e.key === "ArrowRight") {
+                triggerSwipe("like");
+            } else if (e.key === "ArrowUp" || e.key === " " || e.key === "s") {
+                e.preventDefault(); // Prevent page scroll on Space
+                triggerSwipe("save");
+            }
+        });
+
         if (nopeBtn) nopeBtn.addEventListener("click", () => triggerSwipe("nope"));
+        if (saveBtn) saveBtn.addEventListener("click", () => triggerSwipe("save"));
         if (likeBtn) likeBtn.addEventListener("click", () => triggerSwipe("like"));
 
         if (closeSwipeModal) {

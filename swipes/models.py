@@ -6,6 +6,7 @@ class Swipe(models.Model):
     class Direction(models.TextChoices):
         LIKE = 'like', 'Like'
         DISLIKE = 'dislike', 'Dislike'
+        SAVE = 'save', 'Save'
 
     student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='swipes')
     job = models.ForeignKey(JobPosting, on_delete=models.CASCADE, related_name='swipes')
