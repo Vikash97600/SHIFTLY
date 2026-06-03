@@ -1,0 +1,215 @@
+{% extends 'adminpanel/base.html' %}
+
+{% block title %}Verifications Requests - SHIFTLY Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5">
+        <h1 class="text-white mb-1">Verification Requests Desk</h1>
+        <p class="text-muted mb-0">Verify user identities, business licenses, tax documents, and issue badges.</p>
+    </div>
+
+    <div class="dash-card p-4">
+        {% if requests %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Applicant User</th>
+                            <th>Document Type</th>
+                            <th>Credentials Attachment</th>
+                            <th>Submission Time</th>
+                            <th>Verification Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                            <tr id="req-row-{{ req.id }}">
+                                <td>
+                                    <div class="fw-semibold text-white">{{ req.user.email }}</div>
+                                    <span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill text-xs">Role: {{ req.user.role|capfirst }}</span>
+                                </td>
+                                <td><span class="text-white">{{ req.get_document_type_display }}</span></td>
+                                <td>
+                                    <a href="{{ req.document_url }}" target="_blank" class="btn btn-sm btn-dark border border-secondary border-opacity-25 rounded-pill px-3"><i class="bi bi-file-earmark-text text-primary"></i> Open Document</a>
+                                </td>
+                                <td class="text-muted">{{ req.submitted_at|date:"M d, Y H:i" }}</td>
+                                <td id="req-status-{{ req.id }}">
+                                    <span class="badge 
+                                        {% if req.status == 'approved' %}bg-success
+                                        {% elif req.status == 'pending' %}bg-warning
+                                        {% else %}bg-danger{% endif %} 
+                                        bg-opacity-10 
+                                        text-{% if req.status == 'approved' %}success{% elif req.status == 'pending' %}warning{% else %}danger{% endif %} 
+                                        px-2.5 py-1.5 rounded-pill">
+                                        {{ req.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="text-end" id="req-actions-{{ req.id }}">
+                                    {% if req.status == 'pending' %}
+                                        <button class="btn btn-sm btn-premium-outline rounded-pill approve-btn me-1" data-id="{{ req.id }}"><i class="bi bi-check-circle"></i> Approve</button>
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill reject-btn" data-id="{{ req.id }}" data-bs-toggle="modal" data-bs-target="#rejectModal"><i class="bi bi-x-circle"></i> Reject</button>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-outline-secondary rounded-pill" disabled>{{ req.get_status_display }}</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if is_paginated %}
+                <nav class="mt-4 d-flex justify-content-center">
+                    <ul class="pagination pagination-sm">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link bg-dark border-secondary border-opacity-10 text-white" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link bg-dark border-secondary border-opacity-10 text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link bg-dark border-secondary border-opacity-10 text-white" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-patch-check text-muted display-4"></i>
+                <h5 class="text-white mt-3">No verifications found</h5>
+                <p class="text-muted small mb-0">Identity and licensing verification tasks will appear here.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- REJECTION REASON MODAL -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-glass border border-secondary border-opacity-25" style="background-color: #0b0f19;">
+            <div class="modal-header border-secondary border-opacity-10">
+                <h5 class="modal-title text-white" id="rejectModalLabel"><i class="bi bi-exclamation-triangle text-danger"></i> Reject Verification Request</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rejection-form">
+                    <div class="mb-3">
+                        <label for="rejection-reason" class="form-label text-muted">Please state the rejection details/reasoning:</label>
+                        <textarea id="rejection-reason" class="form-control bg-dark border-secondary border-opacity-20 text-white" rows="4" placeholder="e.g. Document image is blurry, license expired..." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary border-opacity-10">
+                <button type="button" class="btn btn-premium-outline btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="submit-rejection-btn" class="btn btn-premium-coral btn-sm rounded-pill">Submit Rejection</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="csrf-form" style="display:none;">
+    {% csrf_token %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const csrfToken = document.querySelector("#csrf-form [name=csrfmiddlewaretoken]").value;
+        const rejectModalElement = document.getElementById("rejectModal");
+        const rejectModal = new bootstrap.Modal(rejectModalElement);
+        
+        let activeRequestId = null;
+
+        // Listen for open rejection modal actions
+        rejectModalElement.addEventListener("show.bs.modal", (e) => {
+            const btn = e.relatedTarget;
+            activeRequestId = btn.getAttribute("data-id");
+            document.getElementById("rejection-reason").value = "";
+        });
+
+        // Delegate listener to handle verification approvals
+        document.querySelector("table tbody").addEventListener("click", (e) => {
+            const btn = e.target.closest(".approve-btn");
+            if (!btn) return;
+
+            const reqId = btn.getAttribute("data-id");
+
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', csrfToken);
+            formData.append('status', 'approved');
+
+            btn.disabled = true;
+
+            fetch(`/api/v1/adminpanel/verifications/action/${reqId}/`, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.success) {
+                    const statusCol = document.getElementById(`req-status-${reqId}`);
+                    const actionsCol = document.getElementById(`req-actions-${reqId}`);
+
+                    statusCol.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1.5 rounded-pill">Approved</span>`;
+                    actionsCol.innerHTML = `<button class="btn btn-sm btn-outline-secondary rounded-pill" disabled>Approved</button>`;
+                } else {
+                    alert("Error: " + (data.error || "Failed to approve verification."));
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                console.error("Action failed:", err);
+            });
+        });
+
+        // Handle reject submit
+        document.getElementById("submit-rejection-btn").addEventListener("click", () => {
+            const reason = document.getElementById("rejection-reason").value.trim();
+            if (!reason) return;
+
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', csrfToken);
+            formData.append('status', 'rejected');
+            formData.append('reason', reason);
+
+            const submitBtn = document.getElementById("submit-rejection-btn");
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...`;
+
+            fetch(`/api/v1/adminpanel/verifications/action/${activeRequestId}/`, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `Submit Rejection`;
+                rejectModal.hide();
+                
+                if (data.success) {
+                    const statusCol = document.getElementById(`req-status-${activeRequestId}`);
+                    const actionsCol = document.getElementById(`req-actions-${activeRequestId}`);
+
+                    statusCol.innerHTML = `<span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1.5 rounded-pill">Rejected</span>`;
+                    actionsCol.innerHTML = `<button class="btn btn-sm btn-outline-secondary rounded-pill" disabled>Rejected</button>`;
+                } else {
+                    alert("Error: " + (data.error || "Failed to reject verification."));
+                }
+            })
+            .catch(err => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `Submit Rejection`;
+                console.error("Action failed:", err);
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends 'adminpanel/base.html' %}
+
+{% block title %}Shift Moderation - SHIFTLY Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5">
+        <h1 class="text-white mb-1">Shift Moderation Dashboard</h1>
+        <p class="text-muted mb-0">Monitor active postings, delete suspicious listings, or restore moderated shifts.</p>
+    </div>
+
+    <div class="dash-card p-4">
+        {% if jobs %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Shift Posting</th>
+                            <th>Company</th>
+                            <th>Wage Rate</th>
+                            <th>Shift Date</th>
+                            <th>Capacity Slots</th>
+                            <th>Moderation State</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in jobs %}
+                            <tr id="job-row-{{ job.id }}">
+                                <td>
+                                    <div class="fw-semibold text-white">{{ job.title }}</div>
+                                    <small class="text-muted"><i class="bi bi-geo-alt-fill text-danger text-xs"></i> {{ job.location_name }}</small>
+                                </td>
+                                <td class="text-white">{{ job.business.company_name }}</td>
+                                <td><span class="text-success fw-bold">${{ job.base_pay }}/hr</span></td>
+                                <td class="text-muted">{{ job.start_date }}</td>
+                                <td class="text-muted">{{ job.slots_filled }} / {{ job.slots_available }}</td>
+                                <td id="job-status-{{ job.id }}">
+                                    <span class="badge 
+                                        {% if job.status == 'active' %}bg-success
+                                        {% elif job.status == 'deleted' %}bg-danger
+                                        {% else %}bg-secondary{% endif %} 
+                                        bg-opacity-10 
+                                        text-{% if job.status == 'active' %}success{% elif job.status == 'deleted' %}danger{% else %}secondary{% endif %} 
+                                        px-2.5 py-1.5 rounded-pill">
+                                        {{ job.status|capfirst }}
+                                    </span>
+                                </td>
+                                <td class="text-end" id="job-actions-{{ job.id }}">
+                                    {% if job.status != 'deleted' %}
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill moderate-btn" data-id="{{ job.id }}" data-action="delete">
+                                            <i class="bi bi-trash"></i> Delete Post
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-outline-success rounded-pill moderate-btn" data-id="{{ job.id }}" data-action="restore">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if is_paginated %}
+                <nav class="mt-4 d-flex justify-content-center">
+                    <ul class="pagination pagination-sm">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link bg-dark border-secondary border-opacity-10 text-white" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link bg-dark border-secondary border-opacity-10 text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link bg-dark border-secondary border-opacity-10 text-white" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-briefcase text-muted display-4"></i>
+                <h5 class="text-white mt-3">No shifts listed</h5>
+                <p class="text-muted small mb-0">Employer shift job postings will populate here.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<form id="csrf-form" style="display:none;">
+    {% csrf_token %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const csrfToken = document.querySelector("#csrf-form [name=csrfmiddlewaretoken]").value;
+
+        // Delegate listener to handle dynamically generated action nodes
+        document.querySelector("table tbody").addEventListener("click", (e) => {
+            const btn = e.target.closest(".moderate-btn");
+            if (!btn) return;
+
+            const jobId = btn.getAttribute("data-id");
+            const action = btn.getAttribute("data-action");
+
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', csrfToken);
+            formData.append('action', action);
+
+            btn.disabled = true;
+
+            fetch(`/api/v1/adminpanel/jobs/action/${jobId}/`, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.success) {
+                    const statusCol = document.getElementById(`job-status-${jobId}`);
+                    const actionsCol = document.getElementById(`job-actions-${jobId}`);
+
+                    if (data.status === 'deleted') {
+                        statusCol.innerHTML = `<span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1.5 rounded-pill">Deleted</span>`;
+                        actionsCol.innerHTML = `
+                            <button class="btn btn-sm btn-outline-success rounded-pill moderate-btn" data-id="${jobId}" data-action="restore">
+                                <i class="bi bi-arrow-counterclockwise"></i> Restore
+                            </button>
+                        `;
+                    } else {
+                        statusCol.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1.5 rounded-pill">Active</span>`;
+                        actionsCol.innerHTML = `
+                            <button class="btn btn-sm btn-outline-danger rounded-pill moderate-btn" data-id="${jobId}" data-action="delete">
+                                <i class="bi bi-trash"></i> Delete Post
+                            </button>
+                        `;
+                    }
+                } else {
+                    alert("Error: " + (data.error || "Failed to moderate shift."));
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                console.error("Action failed:", err);
+            });
+        });
+    });
+</script>
+{% endblock %}

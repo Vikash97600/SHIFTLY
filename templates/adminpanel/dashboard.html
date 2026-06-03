@@ -1,0 +1,307 @@
+{% extends 'adminpanel/base.html' %}
+
+{% block title %}Analytics Dashboard - SHIFTLY Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5">
+        <h1 class="text-white mb-1">System Metrics & Analytics</h1>
+        <p class="text-muted mb-0">Overview of SHIFTLY key metrics, system activities, and revenue ledgers.</p>
+    </div>
+
+    <!-- KPI SUMMARY CARDS -->
+    <div class="row g-4 mb-5">
+        <!-- Revenue Card -->
+        <div class="col-xl-2.4 col-lg-4 col-md-6">
+            <div class="dash-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <small class="text-muted d-block mb-1">PLATFORM REVENUE</small>
+                    <h3 class="text-white fw-bold mb-0">${{ total_revenue|floatformat:2 }}</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <span class="text-xs text-success"><i class="bi bi-arrow-up-right"></i> 10% fee</span>
+                    <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 fs-5"><i class="bi bi-wallet2"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Users Card -->
+        <div class="col-xl-2.4 col-lg-4 col-md-6">
+            <div class="dash-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <small class="text-muted d-block mb-1">TOTAL USERS</small>
+                    <h3 class="text-white fw-bold mb-0">{{ total_users }}</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <span class="text-xs text-muted">All active profiles</span>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 fs-5"><i class="bi bi-people-fill"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Jobs Card -->
+        <div class="col-xl-2.4 col-lg-4 col-md-6">
+            <div class="dash-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <small class="text-muted d-block mb-1">ACTIVE JOBS</small>
+                    <h3 class="text-white fw-bold mb-0">{{ active_jobs }}</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <span class="text-xs text-info"><i class="bi bi-lightning-charge"></i> Instant match</span>
+                    <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 fs-5"><i class="bi bi-briefcase-fill"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Businesses Card -->
+        <div class="col-xl-2.4 col-lg-6 col-md-6">
+            <div class="dash-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <small class="text-muted d-block mb-1">BUSINESSES</small>
+                    <h3 class="text-white fw-bold mb-0">{{ total_businesses }}</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <span class="text-xs text-warning">Acme listings</span>
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-2 fs-5"><i class="bi bi-building"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matches Card -->
+        <div class="col-xl-2.4 col-lg-6 col-md-6">
+            <div class="dash-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <small class="text-muted d-block mb-1">TOTAL MATCHES</small>
+                    <h3 class="text-white fw-bold mb-0">{{ total_matches }}</h3>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <span class="text-xs text-danger"><i class="bi bi-heart-fill"></i> Hired connections</span>
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 fs-5"><i class="bi bi-suit-heart-fill"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ANALYTICS CHARTS -->
+    <div class="row g-4 mb-5">
+        <!-- Revenue Trends Chart -->
+        <div class="col-lg-8">
+            <div class="dash-card p-4">
+                <h5 class="text-white mb-4"><i class="bi bi-graph-up-arrow text-success"></i> Platform Revenue Growth (USD)</h5>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Roles Chart -->
+        <div class="col-lg-4">
+            <div class="dash-card p-4">
+                <h5 class="text-white mb-4"><i class="bi bi-pie-chart text-info"></i> User Base Division</h5>
+                <div style="height: 300px; position: relative; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="rolesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <!-- Signups Growth Chart -->
+        <div class="col-lg-6">
+            <div class="dash-card p-4">
+                <h5 class="text-white mb-4"><i class="bi bi-person-plus text-primary"></i> Daily User Registration Growth</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="signupsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shift Pipeline Stats Chart -->
+        <div class="col-lg-6">
+            <div class="dash-card p-4">
+                <h5 class="text-white mb-4"><i class="bi bi-bar-chart text-warning"></i> Matching Pipeline Activity</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="pipelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIT LOGS TABLE -->
+    <div class="dash-card p-4">
+        <h5 class="text-white mb-4"><i class="bi bi-clock-history text-muted"></i> System Activity Audit Log</h5>
+        
+        {% if recent_logs %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Timestamp</th>
+                            <th>Actor</th>
+                            <th>Moderation Action</th>
+                            <th>Target Table</th>
+                            <th>Target Database ID</th>
+                            <th>Details Summary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in recent_logs %}
+                            <tr>
+                                <td class="text-muted">{{ log.created_at|date:"M d, Y H:i:s" }}</td>
+                                <td class="text-white fw-bold">{{ log.actor.email }}</td>
+                                <td>
+                                    <span class="badge bg-secondary bg-opacity-10 text-white rounded-pill px-2.5 py-1">
+                                        {{ log.action }}
+                                    </span>
+                                </td>
+                                <td class="text-muted"><code>{{ log.target_table|default:"-" }}</code></td>
+                                <td class="text-muted"><code>{{ log.target_id|default:"-" }}</code></td>
+                                <td class="text-muted"><small>{{ log.details|default:"-" }}</small></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-journal-text text-muted display-4"></i>
+                <h6 class="text-white mt-3">No activity logs recorded</h6>
+                <p class="text-muted small mb-0">System audit operations will populate here.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Read chart parameters from Django variables
+        const revenueLabels = JSON.parse('{{ revenue_labels|safe }}');
+        const revenueValues = JSON.parse('{{ revenue_values|safe }}');
+        const signupLabels = JSON.parse('{{ signup_labels|safe }}');
+        const signupValues = JSON.parse('{{ signup_values|safe }}');
+
+        const studentCount = {{ student_count }};
+        const businessCount = {{ business_count }};
+        const adminCount = {{ admin_count }};
+
+        const activeJobs = {{ active_jobs }};
+        const filledShifts = {{ filled_shifts }};
+        const totalApps = {{ total_apps }};
+        const totalMatches = {{ total_matches }};
+
+        // 1. Revenue line chart
+        const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctxRevenue, {
+            type: 'line',
+            data: {
+                labels: revenueLabels,
+                datasets: [{
+                    label: 'Platform Revenue ($)',
+                    data: revenueValues,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#10B981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } },
+                    x: { grid: { display: false }, ticks: { color: '#94A3B8' } }
+                }
+            }
+        });
+
+        // 2. Signups growth chart
+        const ctxSignups = document.getElementById('signupsChart').getContext('2d');
+        new Chart(ctxSignups, {
+            type: 'line',
+            data: {
+                labels: signupLabels,
+                datasets: [{
+                    label: 'Signups',
+                    data: signupValues,
+                    borderColor: '#6366F1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } },
+                    x: { grid: { display: false }, ticks: { color: '#94A3B8' } }
+                }
+            }
+        });
+
+        // 3. User Roles doughnut chart
+        const ctxRoles = document.getElementById('rolesChart').getContext('2d');
+        new Chart(ctxRoles, {
+            type: 'doughnut',
+            data: {
+                labels: ['Students', 'Employers', 'Admins'],
+                datasets: [{
+                    data: [studentCount, businessCount, adminCount],
+                    backgroundColor: ['#FF416C', '#6366F1', '#EC4899'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#94A3B8', boxWidth: 12 }
+                    }
+                }
+            }
+        });
+
+        // 4. Matching Pipeline stats
+        const ctxPipeline = document.getElementById('pipelineChart').getContext('2d');
+        new Chart(ctxPipeline, {
+            type: 'bar',
+            data: {
+                labels: ['Active Shifts', 'Filled Shifts', 'Applications', 'Hired Matches'],
+                datasets: [{
+                    data: [activeJobs, filledShifts, totalApps, totalMatches],
+                    backgroundColor: ['#10B981', '#6366F1', '#F59E0B', '#FF416C'],
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8' } },
+                    x: { grid: { display: false }, ticks: { color: '#94A3B8' } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

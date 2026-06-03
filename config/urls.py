@@ -28,6 +28,7 @@ urlpatterns = [
     path("api/v1/jobs/", include("jobs.urls")),
     path("api/v1/matches/", include("matches.urls")),
     path("api/v1/chat/", include("chat.urls")),
+    path("api/v1/adminpanel/", include("adminpanel.urls")),
 ]
 
 if settings.DEBUG:
