@@ -1,5 +1,25 @@
+import os
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
+
+def validate_file_size(value):
+    limit = 5 * 1024 * 1024  # 5MB limit
+    if value.size > limit:
+        raise ValidationError('File size cannot exceed 5MB.')
+
+def validate_resume_extension(value):
+    ext = os.path.splitext(value.name)[1]
+    valid_extensions = ['.pdf', '.doc', '.docx']
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension. Only PDF, DOC, and DOCX are allowed.')
+
+def validate_portfolio_extension(value):
+    ext = os.path.splitext(value.name)[1]
+    valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.zip']
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension. Only PDF, images (JPG, PNG), and ZIP files are allowed.')
+
 
 class StudentProfile(models.Model):
     class Availability(models.TextChoices):
@@ -11,7 +31,19 @@ class StudentProfile(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     bio = models.TextField(blank=True, null=True)
+    resume = models.FileField(
+        upload_to='resumes/', 
+        blank=True, 
+        null=True,
+        validators=[validate_file_size, validate_resume_extension]
+    )
     resume_url = models.URLField(max_length=255, blank=True, null=True)
+    portfolio_file = models.FileField(
+        upload_to='portfolios/', 
+        blank=True, 
+        null=True,
+        validators=[validate_file_size, validate_portfolio_extension]
+    )
     profile_picture_url = models.URLField(max_length=255, blank=True, null=True)
     reputation_score = models.DecimalField(max_digits=5, decimal_places=2, default=100.00)
     hourly_rate_expectation = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)

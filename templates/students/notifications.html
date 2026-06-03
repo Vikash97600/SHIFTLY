@@ -1,0 +1,86 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Notifications - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="text-white mb-1">Notifications</h1>
+            <p class="text-muted mb-0">Stay up to date with job applications, chat matches, and payout transfers.</p>
+        </div>
+        <button id="mark-all-read" class="btn btn-premium-outline btn-sm rounded-pill"><i class="bi bi-check2-all"></i> Mark all as read</button>
+    </div>
+
+    <div class="dash-card p-4">
+        {% if notifications %}
+            <div class="d-flex flex-column gap-3" id="notifications-wrapper">
+                {% for n in notifications %}
+                    <div class="p-3 bg-glass border border-secondary border-opacity-10 rounded-4 d-flex justify-content-between align-items-start {% if not n.is_read %}border-start border-start-3 border-start-danger{% endif %}" id="notif-{{ n.id }}">
+                        <div class="d-flex gap-3">
+                            <div class="rounded-circle p-2 fs-5 bg-glass border border-secondary border-opacity-10 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                {% if n.type == 'match' %}<i class="bi bi-heart-fill text-success"></i>
+                                {% elif n.type == 'message' %}<i class="bi bi-chat-fill text-primary"></i>
+                                {% elif n.type == 'payment' %}<i class="bi bi-cash-coin text-warning"></i>
+                                {% else %}<i class="bi bi-info-circle-fill text-info"></i>{% endif %}
+                            </div>
+                            <div>
+                                <h6 class="text-white mb-1">{{ n.title }} {% if not n.is_read %}<span class="badge bg-danger rounded-circle p-1" style="width: 8px; height: 8px; display: inline-block;"><span class="visually-hidden">New</span></span>{% endif %}</h6>
+                                <p class="text-muted small mb-0">{{ n.body }}</p>
+                                <small class="text-secondary" style="font-size: 0.75rem;">{{ n.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-bell-slash text-muted display-3"></i>
+                <h5 class="text-white mt-3">No Notifications</h5>
+                <p class="text-muted small">We'll alert you here when new matches or updates occur!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<form id="csrf-form" style="display:none;">
+    {% csrf_token %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const markAllBtn = document.getElementById("mark-all-read");
+        const csrfToken = document.querySelector("#csrf-form [name=csrfmiddlewaretoken]").value;
+
+        if (markAllBtn) {
+            markAllBtn.addEventListener("click", () => {
+                fetch("{% url 'student_notifications_read' %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrfToken,
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Dynamically update UI classes to reflect read status
+                        const badges = document.querySelectorAll(".badge.bg-danger.rounded-circle");
+                        badges.forEach(b => b.remove());
+                        
+                        const items = document.querySelectorAll("#notifications-wrapper > div");
+                        items.forEach(item => {
+                            item.style.borderLeft = "none";
+                        });
+                        
+                        markAllBtn.remove();
+                    }
+                })
+                .catch(err => console.error("Error marking read:", err));
+            });
+        }
+    });
+</script>
+{% endblock %}

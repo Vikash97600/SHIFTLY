@@ -1,0 +1,73 @@
+{% extends 'students/base.html' %}
+
+{% block title %}My Applications - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5">
+        <h1 class="text-white mb-1">My Applications</h1>
+        <p class="text-muted mb-0">Track the status of your matches and application requests.</p>
+    </div>
+
+    <div class="dash-card p-4">
+        {% if applications %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Job Title</th>
+                            <th>Company</th>
+                            <th>Pay Rate</th>
+                            <th>Shift Date</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold text-white">{{ app.job.title }}</div>
+                                    <small class="text-muted">{{ app.job.work_type|capfirst }}</small>
+                                </td>
+                                <td class="text-muted">{{ app.job.business.company_name }}</td>
+                                <td>
+                                    <span class="text-gradient-coral fw-bold">${{ app.job.base_pay }}/hr</span>
+                                </td>
+                                <td class="text-muted">
+                                    {{ app.job.start_date }}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if app.status == 'accepted' or app.status == 'offered' %}bg-success
+                                        {% elif app.status == 'applied' or app.status == 'shortlisted' %}bg-warning
+                                        {% else %}bg-secondary{% endif %} 
+                                        bg-opacity-10 
+                                        text-{% if app.status == 'accepted' or app.status == 'offered' %}success{% elif app.status == 'applied' or app.status == 'shortlisted' %}warning{% else %}secondary{% endif %} 
+                                        px-3 py-1.5 rounded-pill">
+                                        {{ app.status|capfirst }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    {% if app.match %}
+                                        <a href="#" class="btn btn-premium-outline btn-sm rounded-pill"><i class="bi bi-chat-dots"></i> Message</a>
+                                    {% else %}
+                                        <button class="btn btn-premium-outline btn-sm rounded-pill" disabled>Pending Match</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-file-earmark-text text-muted display-3"></i>
+                <h5 class="text-white mt-3">No Applications Yet</h5>
+                <p class="text-muted small mb-4">Start swiping on jobs to match and generate shift applications!</p>
+                <a href="{% url 'student_swipe' %}" class="btn btn-premium-coral"><i class="bi bi-suit-heart-fill"></i> Find Shifts</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

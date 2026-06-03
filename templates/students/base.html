@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SHIFTLY Student Dashboard{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Main Style Guide (using landing page design tokens) -->
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 260px;
+            background: #111827;
+            border-right: 1px solid var(--dark-border);
+            z-index: 100;
+            transition: var(--transition-smooth);
+        }
+
+        .sidebar-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-link:hover, .sidebar-link.active {
+            color: var(--text-light);
+            background: rgba(255, 65, 108, 0.05);
+            border-left-color: var(--primary-coral);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        @media (max-width: 991.98px) {
+            .sidebar {
+                transform: translateX(-260px);
+            }
+            .sidebar.show-sidebar {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+        }
+        
+        .dash-card {
+            background-color: var(--dark-card);
+            border: 1px solid var(--dark-border);
+            border-radius: 16px;
+            transition: var(--transition-smooth);
+        }
+        
+        .dash-card:hover {
+            border-color: rgba(255, 65, 108, 0.15);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- SIDEBAR NAV -->
+    <aside class="sidebar d-flex flex-column justify-content-between py-4">
+        <div>
+            <div class="px-4 mb-5">
+                <a href="{% url 'student_dashboard' %}" class="navbar-brand text-gradient-coral fs-4 fw-extrabold"><i class="bi bi-lightning-charge-fill"></i> SHIFTLY</a>
+            </div>
+            
+            <nav class="d-flex flex-column gap-1">
+                <a href="{% url 'student_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}">
+                    <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                </a>
+                <a href="{% url 'student_swipe' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_swipe' %}active{% endif %}">
+                    <i class="bi bi-suit-heart-fill"></i> Swipe Jobs
+                </a>
+                <a href="{% url 'student_applications' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_applications' %}active{% endif %}">
+                    <i class="bi bi-file-earmark-person-fill"></i> Applications
+                </a>
+                <a href="{% url 'student_earnings' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_earnings' %}active{% endif %}">
+                    <i class="bi bi-wallet2"></i> Earnings
+                </a>
+                <a href="{% url 'student_profile_edit' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_profile_edit' %}active{% endif %}">
+                    <i class="bi bi-person-fill-gear"></i> Edit Profile
+                </a>
+                <a href="{% url 'student_notifications' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_notifications' %}active{% endif %}">
+                    <i class="bi bi-bell-fill"></i> Notifications
+                </a>
+            </nav>
+        </div>
+
+        <div class="px-4 border-top border-secondary border-opacity-10 pt-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="bg-glass rounded-circle p-1">
+                    <img src="{{ profile.profile_picture_url|default:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80' }}" alt="Profile Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                </div>
+                <div>
+                    <h6 class="mb-0 text-white">{{ request.user.student_profile.first_name }} {{ request.user.student_profile.last_name }}</h6>
+                    <small class="text-muted"><i class="bi bi-shield-fill-check text-success"></i> Score: {{ request.user.student_profile.reputation_score }}</small>
+                </div>
+            </div>
+            <!-- Logout route (using standard django path if configured, or root landing) -->
+            <a href="/" class="btn btn-outline-danger btn-sm w-100 rounded-pill"><i class="bi bi-box-arrow-left"></i> Log Out</a>
+        </div>
+    </aside>
+
+    <!-- MOBILE HEADER -->
+    <header class="d-lg-none d-flex justify-content-between align-items-center bg-dark py-3 px-4 border-bottom border-secondary border-opacity-10 sticky-top">
+        <a href="{% url 'student_dashboard' %}" class="navbar-brand text-gradient-coral"><i class="bi bi-lightning-charge-fill"></i> SHIFTLY</a>
+        <button class="btn btn-premium-outline btn-sm py-2 px-3 border border-secondary border-opacity-20" onclick="document.querySelector('.sidebar').classList.toggle('show-sidebar')">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+    </header>
+
+    <!-- MAIN BODY CANVAS -->
+    <main class="main-content">
+        <!-- Render Django flash messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show bg-glass text-light border border-opacity-10 mb-4" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

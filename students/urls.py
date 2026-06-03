@@ -1,6 +1,24 @@
 from django.urls import path
-from .views import StudentProfileView
+from .views import (
+    StudentDashboardView,
+    StudentProfileEditView,
+    StudentProfileView,
+    SwipeConsoleView,
+    SwipeActionView,
+    ApplicationsListView,
+    EarningsListView,
+    NotificationsListView,
+    MarkNotificationsReadView
+)
 
 urlpatterns = [
+    path('dashboard/', StudentDashboardView.as_view(), name='student_dashboard'),
     path('profile/', StudentProfileView.as_view(), name='student_profile'),
+    path('profile/edit/', StudentProfileEditView.as_view(), name='student_profile_edit'),
+    path('swipe/', SwipeConsoleView.as_view(), name='student_swipe'),
+    path('swipe/action/', SwipeActionView.as_view(), name='student_swipe_action'),
+    path('applications/', ApplicationsListView.as_view(), name='student_applications'),
+    path('earnings/', EarningsListView.as_view(), name='student_earnings'),
+    path('notifications/', NotificationsListView.as_view(), name='student_notifications'),
+    path('notifications/read/', MarkNotificationsReadView.as_view(), name='student_notifications_read'),
 ]

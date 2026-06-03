@@ -1,0 +1,93 @@
+{% extends 'students/base.html' %}
+
+{% block title %}My Earnings - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5">
+        <h1 class="text-white mb-1">My Earnings</h1>
+        <p class="text-muted mb-0">Track completed shift payouts, escrow balances, and weekly bank deposits.</p>
+    </div>
+
+    <!-- EARNINGS SUMMARY CARDS -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <small class="text-muted d-block mb-1">TOTAL EARNED (RELEASED)</small>
+                    <h2 class="text-success mb-0">${{ total_earned|floatformat:2 }}</h2>
+                </div>
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 fs-3"><i class="bi bi-bank"></i></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <small class="text-muted d-block mb-1">HELD IN PLATFORM ESCROW</small>
+                    <h2 class="text-warning mb-0">${{ total_escrow|floatformat:2 }}</h2>
+                </div>
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 fs-3"><i class="bi bi-lock-fill"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRANSACTION LOG TABLE -->
+    <div class="dash-card p-4">
+        <h5 class="text-white mb-4"><i class="bi bi-clock-history text-muted"></i> Payout History</h5>
+        
+        {% if earnings_logs %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Transaction Reference</th>
+                            <th>Job Details</th>
+                            <th>Gross Pay</th>
+                            <th>Platform Fee (10%)</th>
+                            <th>Net Payout</th>
+                            <th>Payment Status</th>
+                            <th>Payout Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in earnings_logs %}
+                            <tr>
+                                <td>
+                                    <code class="text-gradient-indigo">{{ e.transaction_reference|default:"Pending" }}</code>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-white">{{ e.job.title }}</div>
+                                    <small class="text-muted">{{ e.business.company_name }}</small>
+                                </td>
+                                <td class="text-muted">${{ e.gross_amount }}</td>
+                                <td class="text-muted text-danger">-${{ e.platform_fee }}</td>
+                                <td class="text-white fw-bold">${{ e.net_amount }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if e.payment_status == 'released' %}bg-success
+                                        {% elif e.payment_status == 'escrow' %}bg-warning
+                                        {% else %}bg-secondary{% endif %} 
+                                        bg-opacity-10 
+                                        text-{% if e.payment_status == 'released' %}success{% elif e.payment_status == 'escrow' %}warning{% else %}secondary{% endif %} 
+                                        px-2.5 py-1.5 rounded-pill">
+                                        {{ e.payment_status|capfirst }}
+                                    </span>
+                                </td>
+                                <td class="text-muted">
+                                    {{ e.created_at|date:"M d, Y" }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-wallet2 text-muted display-3"></i>
+                <h5 class="text-white mt-3">No Earnings Yet</h5>
+                <p class="text-muted small">Completed shifts and released platform payouts will show here.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
