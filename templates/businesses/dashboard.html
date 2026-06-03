@@ -1,0 +1,124 @@
+{% extends 'businesses/base.html' %}
+
+{% block title %}Dashboard - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="text-white mb-1">Welcome, {{ profile.company_name }}!</h1>
+            <p class="text-muted mb-0">Here's your operational hiring overview for today.</p>
+        </div>
+        <a href="{% url 'job_post' %}" class="btn btn-premium-coral"><i class="bi bi-plus-circle"></i> Post a Shift</a>
+    </div>
+
+    <!-- STATS COUNTERS -->
+    <div class="row g-4 mb-5">
+        <div class="col-xl-3 col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center gap-4">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 fs-3"><i class="bi bi-briefcase-fill"></i></div>
+                <div>
+                    <h3 class="text-white mb-0">{{ total_jobs_posted }}</h3>
+                    <small class="text-muted">Total Shifts Posted</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center gap-4">
+                <div class="bg-info bg-opacity-10 text-info rounded-circle p-3 fs-3"><i class="bi bi-activity"></i></div>
+                <div>
+                    <h3 class="text-white mb-0">{{ active_jobs_count }}</h3>
+                    <small class="text-muted">Active Shifts</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center gap-4">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 fs-3"><i class="bi bi-people-fill"></i></div>
+                <div>
+                    <h3 class="text-white mb-0">{{ filled_slots_count }}</h3>
+                    <small class="text-muted">Slots Filled</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center gap-4">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 fs-3"><i class="bi bi-lock-fill"></i></div>
+                <div>
+                    <h3 class="text-white mb-0">${{ escrow_held|floatformat:2 }}</h3>
+                    <small class="text-muted">Held in Escrow</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- RECENT APPLICANTS -->
+        <div class="col-lg-7">
+            <div class="dash-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="text-white mb-0"><i class="bi bi-people text-warning"></i> Recent Applicants</h5>
+                    <a href="{% url 'business_applicants' %}" class="text-gradient-coral text-decoration-none fw-semibold">Review Matches <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                {% if recent_applications %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for app in recent_applications %}
+                            <div class="p-3 bg-glass border border-secondary border-opacity-10 rounded-4 d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-dark p-2 rounded-circle border border-secondary border-opacity-10" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                        <img src="{{ app.student.profile_picture_url|default:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80' }}" class="img-fluid rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                                    </div>
+                                    <div>
+                                        <h6 class="text-white mb-0">{{ app.student.first_name }} {{ app.student.last_name }}</h6>
+                                        <small class="text-muted">Applied for: {{ app.job.title }}</small>
+                                    </div>
+                                </div>
+                                <span class="badge {% if app.status == 'accepted' %}bg-success{% else %}bg-warning{% endif %} bg-opacity-10 text-{% if app.status == 'accepted' %}success{% else %}warning{% endif %} px-2.5 py-1.5 rounded-pill">
+                                    {{ app.status|capfirst }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-person-x text-muted display-4"></i>
+                        <p class="text-muted mt-3">No active applicants yet. Post more shifts to attract candidates!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ACTIVE SHIFTS OVERVIEW -->
+        <div class="col-lg-5">
+            <div class="dash-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="text-white mb-0"><i class="bi bi-briefcase text-primary"></i> Active Shifts</h5>
+                    <a href="{% url 'job_management' %}" class="text-gradient-indigo text-decoration-none fw-semibold">All Jobs</a>
+                </div>
+
+                {% if jobs_overview %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for job in jobs_overview %}
+                            <div class="p-3 bg-glass border border-secondary border-opacity-10 rounded-4 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-white mb-0">{{ job.title }}</h6>
+                                    <small class="text-muted">{{ job.start_date }} • Pay: ${{ job.base_pay }}/hr</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded-pill">{{ job.slots_filled }}/{{ job.slots_available }} Filled</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x text-muted display-4"></i>
+                        <p class="text-muted mt-3">No shifts posted. Get started now!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

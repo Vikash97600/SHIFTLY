@@ -1,0 +1,73 @@
+{% extends 'businesses/base.html' %}
+
+{% block title %}Company Settings - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5">
+        <h1 class="text-white mb-1">Company Settings</h1>
+        <p class="text-muted mb-0">Update your company details, website links, tax ID registrations, and upload brand logos.</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="dash-card p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Company Name</label>
+                            {{ form.company_name }}
+                            {{ form.company_name.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Industry Type</label>
+                            {{ form.industry }}
+                            {{ form.industry.errors }}
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label text-muted">Company Description</label>
+                            {{ form.description }}
+                            {{ form.description.errors }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Business Registration Number</label>
+                            {{ form.business_registration_no }}
+                            {{ form.business_registration_no.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Tax ID / EIN</label>
+                            {{ form.tax_id }}
+                            {{ form.tax_id.errors }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Website Link</label>
+                            {{ form.website_url }}
+                            {{ form.website_url.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Brand Logo Image Link</label>
+                            {{ form.company_logo_url }}
+                            {{ form.company_logo_url.errors }}
+                            {% if profile.company_logo_url %}
+                                <div class="mt-2">
+                                    <small class="text-success"><i class="bi bi-image"></i> Brand logo linked. Previewing:</small>
+                                    <img src="{{ profile.company_logo_url }}" class="d-block mt-2 rounded border border-secondary border-opacity-10" style="max-height: 50px; object-fit: contain;">
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-5 text-end">
+                        <button type="submit" class="btn btn-premium-coral px-4 py-2.5">Save Company Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

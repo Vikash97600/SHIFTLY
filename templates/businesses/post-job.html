@@ -1,0 +1,95 @@
+{% extends 'businesses/base.html' %}
+
+{% block title %}Post a Shift - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5">
+        <h1 class="text-white mb-1">Post a New Shift</h1>
+        <p class="text-muted mb-0">List details about tasks, required experience, pay rates, shift dates, and slot sizes.</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="dash-card p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Job / Shift Title</label>
+                            {{ form.title }}
+                            {{ form.title.errors }}
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label text-muted">Shift Description</label>
+                            {{ form.description }}
+                            {{ form.description.errors }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Work Setup Type</label>
+                            {{ form.work_type }}
+                            {{ form.work_type.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Hourly Base Rate ($/hr)</label>
+                            {{ form.base_pay }}
+                            {{ form.base_pay.errors }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label text-muted">Location Name / Address</label>
+                            {{ form.location_name }}
+                            {{ form.location_name.errors }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Latitude</label>
+                            {{ form.latitude }}
+                            {{ form.latitude.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Longitude</label>
+                            {{ form.longitude }}
+                            {{ form.longitude.errors }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Shift Start Date</label>
+                            {{ form.start_date }}
+                            {{ form.start_date.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Shift End Date</label>
+                            {{ form.end_date }}
+                            {{ form.end_date.errors }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Shift Start Time</label>
+                            {{ form.shift_start_time }}
+                            {{ form.shift_start_time.errors }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Shift End Time</label>
+                            {{ form.shift_end_time }}
+                            {{ form.shift_end_time.errors }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Available Slots</label>
+                            {{ form.slots_available }}
+                            {{ form.slots_available.errors }}
+                        </div>
+                    </div>
+
+                    <div class="mt-5 text-end">
+                        <button type="submit" class="btn btn-premium-coral px-5 py-3"><i class="bi bi-send-check"></i> Post Active Shift</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

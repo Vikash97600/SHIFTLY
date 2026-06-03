@@ -1,0 +1,82 @@
+{% extends 'businesses/base.html' %}
+
+{% block title %}Manage Shifts - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="text-white mb-1">Manage Shifts</h1>
+            <p class="text-muted mb-0">Track slot allocation, edit status, and view candidates matching active shifts.</p>
+        </div>
+        <a href="{% url 'job_post' %}" class="btn btn-premium-coral"><i class="bi bi-plus-circle"></i> Post a Shift</a>
+    </div>
+
+    <div class="dash-card p-4">
+        {% if jobs %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
+                    <thead>
+                        <tr class="text-muted">
+                            <th>Shift Title</th>
+                            <th>Setup</th>
+                            <th>Base Rate</th>
+                            <th>Date & Hours</th>
+                            <th>Filled Status</th>
+                            <th>Listing Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in jobs %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold text-white">{{ job.title }}</div>
+                                    <small class="text-muted">{{ job.location_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-glass border border-secondary border-opacity-10 text-muted px-2.5 py-1">
+                                        {{ job.work_type|capfirst }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-gradient-coral fw-bold">${{ job.base_pay }}/hr</span>
+                                </td>
+                                <td class="text-muted">
+                                    {{ job.start_date }}<br>
+                                    <small>{{ job.shift_start_time }} - {{ job.shift_end_time }}</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2" style="max-width: 150px;">
+                                        <div class="progress w-100 bg-secondary bg-opacity-20" style="height: 6px;">
+                                            <div class="progress-bar bg-success" style="width: {% widthratio job.slots_filled job.slots_available 100 %}%"></div>
+                                        </div>
+                                        <span class="small text-white fw-bold">{{ job.slots_filled }}/{{ job.slots_available }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if job.status == 'active' %}bg-success
+                                        {% elif job.status == 'filled' %}bg-info
+                                        {% else %}bg-secondary{% endif %} 
+                                        bg-opacity-10 
+                                        text-{% if job.status == 'active' %}success{% elif job.status == 'filled' %}info{% else %}secondary{% endif %} 
+                                        px-2.5 py-1.5 rounded-pill">
+                                        {{ job.status|capfirst }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-x text-muted display-3"></i>
+                <h5 class="text-white mt-3">No Active Shifts</h5>
+                <p class="text-muted small mb-4">Post your first hourly gig shift to begin matching with students!</p>
+                <a href="{% url 'job_post' %}" class="btn btn-premium-coral"><i class="bi bi-plus-circle"></i> Post a Shift</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
