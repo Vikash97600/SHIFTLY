@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIFTLY - Swipe Right on Your Next Shift</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+    <!-- =========================================================================
+         NAVBAR
+         ========================================================================= -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top py-3 transition-smooth">
+        <div class="container">
+            <a class="navbar-brand text-gradient-coral" href="#"><i class="bi bi-lightning-charge-fill"></i> SHIFTLY</a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#testimonials">Testimonials</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="login.html" class="btn btn-premium-outline">Login</a>
+                    <a href="register.html" class="btn btn-premium-coral">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- =========================================================================
+         HERO SECTION
+         ========================================================================= -->
+    <header class="hero-section">
+        <div class="hero-glow-1"></div>
+        <div class="hero-glow-2"></div>
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6 text-center text-lg-start">
+                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2 mb-3 fs-6 border border-danger border-opacity-10"><i class="bi bi-stars"></i> Rethink Hourly Work</span>
+                    <h1 class="display-3 text-white mb-4">Swipe Right on Your <span class="text-gradient-coral">Next Shift</span>.</h1>
+                    <p class="lead text-muted mb-5">
+                        SHIFTLY connects local students with instant shifts in retail, hospitality, and event staffing. Build your resume, verify your skills, and get paid weekly. No long applications, just perfect matches.
+                    </p>
+                    <div class="d-flex flex-column flex-sm-row justify-content-center justify-content-lg-start gap-3">
+                        <a href="register.html?role=student" class="btn btn-premium-coral fs-5 px-4 py-3"><i class="bi bi-search"></i> Find Work</a>
+                        <a href="register.html?role=business" class="btn btn-premium-outline fs-5 px-4 py-3"><i class="bi bi-briefcase"></i> Post a Shift</a>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="position-relative">
+                        <!-- Floating Card 1: Match alert -->
+                        <div class="hero-floating-card floating-match bg-glass">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-success bg-opacity-20 text-success rounded-circle p-2 fs-5"><i class="bi bi-check-circle-fill"></i></div>
+                                <div>
+                                    <h6 class="mb-0 text-white">It's a Shift!</h6>
+                                    <small class="text-muted">Blue Bottle Coffee matched you</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Hero Mockup Image -->
+                        <div class="hero-mockup-wrapper">
+                            <img src="assets/img/landing_hero.png" alt="SHIFTLY App Mockup" class="img-fluid rounded-4">
+                        </div>
+
+                        <!-- Floating Card 2: Payout metric -->
+                        <div class="hero-floating-card floating-salary bg-glass">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-danger bg-opacity-20 text-danger rounded-circle p-2 fs-5"><i class="bi bi-wallet2"></i></div>
+                                <div>
+                                    <h6 class="mb-0 text-white">Payout Released</h6>
+                                    <small class="text-success fw-bold">+$196.00 • Barista Shift</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         FEATURES SECTION
+         ========================================================================= -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <div class="text-center mb-5 max-w-600 mx-auto">
+                <h2 class="h1 mb-3 text-white">Engineered for <span class="text-gradient-coral">Speed & Trust</span></h2>
+                <p class="text-muted">We took the best of consumer social apps and matching algorithms and redesigned the job application process from scratch.</p>
+            </div>
+            
+            <div class="row align-items-center g-5 mt-4">
+                <!-- Swipe Card Simulator -->
+                <div class="col-lg-5 order-lg-2">
+                    <div class="swipe-simulator-wrapper">
+                        <div id="sim-card-container">
+                            <!-- Injected dynamically by main.js -->
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center gap-4 mt-4">
+                        <button id="sim-btn-nope" class="btn btn-dark rounded-circle p-3 fs-3 border border-secondary border-opacity-10 shadow-lg text-danger" style="width: 70px; height: 70px;"><i class="bi bi-x-lg"></i></button>
+                        <button id="sim-btn-like" class="btn btn-dark rounded-circle p-3 fs-3 border border-secondary border-opacity-10 shadow-lg text-success" style="width: 70px; height: 70px;"><i class="bi bi-heart-fill"></i></button>
+                    </div>
+                </div>
+
+                <!-- Text descriptions -->
+                <div class="col-lg-7 order-lg-1">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="feature-card bg-glass border">
+                                <div class="feature-icon-box text-danger">
+                                    <i class="bi bi-cursor-fill"></i>
+                                </div>
+                                <h3 class="h5 text-white">Instant Matching</h3>
+                                <p class="text-muted mb-0">No long cover letters. Just swipe on shifts you like. When a business swipes back, you are instantly hired.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-card bg-glass border">
+                                <div class="feature-icon-box text-danger">
+                                    <i class="bi bi-patch-check-fill"></i>
+                                </div>
+                                <h3 class="h5 text-white">Skill Verification</h3>
+                                <p class="text-muted mb-0">Get verified skill badges awarded by admins to unlock premium higher-paying shifts.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-card bg-glass border">
+                                <div class="feature-icon-box text-danger">
+                                    <i class="bi bi-shield-lock-fill"></i>
+                                </div>
+                                <h3 class="h5 text-white">Escrow Payments</h3>
+                                <p class="text-muted mb-0">Businesses fund shifts upfront. Payouts are locked in escrow and released directly to your account weekly.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-card bg-glass border">
+                                <div class="feature-icon-box text-danger">
+                                    <i class="bi bi-chat-heart-fill"></i>
+                                </div>
+                                <h3 class="h5 text-white">Double-Blind Reviews</h3>
+                                <p class="text-muted mb-0">Both parties review each other after completion, maintaining a high-reputation network of talent and businesses.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         HOW IT WORKS
+         ========================================================================= -->
+    <section id="how-it-works" class="steps-section">
+        <div class="container">
+            <div class="text-center mb-5 pb-3">
+                <h2 class="h1 text-white">Three Steps to <span class="text-gradient-coral">Your Next Payout</span></h2>
+                <p class="text-muted">Simple, streamlined, and transparent hourly matching.</p>
+            </div>
+            <div class="row g-5 mt-4">
+                <div class="col-lg-4">
+                    <div class="step-card bg-glass border">
+                        <div class="step-number text-white">1</div>
+                        <h4 class="text-white mt-3">Build Your Profile</h4>
+                        <p class="text-muted mb-0">Sign up, upload your student credentials, and list your skills. Choose your expected hourly rate and availability.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="step-card bg-glass border">
+                        <div class="step-number text-white">2</div>
+                        <h4 class="text-white mt-3">Swipe on Shifts</h4>
+                        <p class="text-muted mb-0">Browse through localized shifts in hospitality, retail, and events. Swipe right to apply. Simple as that.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="step-card bg-glass border">
+                        <div class="step-number text-white">3</div>
+                        <h4 class="text-white mt-3">Work & Get Paid</h4>
+                        <p class="text-muted mb-0">Show up, check-in via app, complete your shift, and watch your earnings transfer directly to your bank account.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         BUSINESS SECTION INSPIRATION
+         ========================================================================= -->
+    <section class="features-section bg-dark bg-opacity-50">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <div class="hero-mockup-wrapper border-opacity-10">
+                        <img src="assets/img/business_mockup.png" alt="Business Dashboard Interface" class="img-fluid rounded-4">
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center text-lg-start">
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 mb-3 fs-6 border border-primary border-opacity-10"><i class="bi bi-building"></i> For Employers</span>
+                    <h2 class="h1 text-white mb-4">Staff Your Business in <span class="text-gradient-indigo">Minutes</span>.</h2>
+                    <p class="lead text-muted mb-4">
+                        Tired of posting job openings and reading endless applications? Describe your shift, set your base rate, and let our matching engine surface top-tier local students instantly.
+                    </p>
+                    <ul class="list-unstyled d-flex flex-column gap-3 text-start mb-5 mx-auto mx-lg-0" style="max-width: 450px;">
+                        <li class="text-muted"><i class="bi bi-check2-circle text-primary me-2"></i> Only match verified profiles matching your skills</li>
+                        <li class="text-muted"><i class="bi bi-check2-circle text-primary me-2"></i> Platform escrow handling ensures simple invoicing</li>
+                        <li class="text-muted"><i class="bi bi-check2-circle text-primary me-2"></i> Review check-ins, ratings, and track shift details</li>
+                    </ul>
+                    <a href="register.html?role=business" class="btn btn-premium-outline px-4 py-3"><i class="bi bi-plus-circle"></i> Create Employer Account</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         TESTIMONIALS
+         ========================================================================= -->
+    <section id="testimonials" class="testimonial-section">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="h1 text-white">Approved by <span class="text-gradient-coral">Students & Businesses</span></h2>
+                <p class="text-muted">See what our community members are saying about shift swiping.</p>
+            </div>
+            <div class="row g-4 mt-4">
+                <div class="col-lg-4">
+                    <div class="testimonial-card bg-glass border">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Student Profile Avatar" class="testimonial-avatar">
+                            <div>
+                                <h5 class="text-white mb-0">Sarah Jenkins</h5>
+                                <small class="text-muted">Student @ SF State</small>
+                            </div>
+                        </div>
+                        <p class="text-muted italic mb-0">
+                            "SHIFTLY changed the way I work. I can swipe on weekend shifts, show up, work, and make an extra $200 easily. Payouts are incredibly fast, and I love not writing resumes!"
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="testimonial-card bg-glass border">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" alt="Business Owner Avatar" class="testimonial-avatar">
+                            <div>
+                                <h5 class="text-white mb-0">Marcus Thorne</h5>
+                                <small class="text-muted">Owner, Blue Bottle Coffee</small>
+                            </div>
+                        </div>
+                        <p class="text-muted italic mb-0">
+                            "We had a barista call out sick, and posted the shift on SHIFTLY. Within 15 minutes, we matched with a verified student. She did an amazing job. Highly recommend this for managers!"
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="testimonial-card bg-glass border">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80" alt="Student Profile Avatar" class="testimonial-avatar">
+                            <div>
+                                <h5 class="text-white mb-0">Elena Rostova</h5>
+                                <small class="text-muted">Student @ USF</small>
+                            </div>
+                        </div>
+                        <p class="text-muted italic mb-0">
+                            "The verified skill badges really make a difference. I got verified for event hospitality, and now I match with higher-paying stadium shifts. It's the perfect gig application."
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         FAQ SECTION
+         ========================================================================= -->
+    <section id="faq" class="faq-section bg-dark bg-opacity-20">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="h1 text-white">Frequently Asked <span class="text-gradient-coral">Questions</span></h2>
+                <p class="text-muted">Got questions? We've got answers.</p>
+            </div>
+            
+            <div class="row justify-content-center mt-5">
+                <div class="col-lg-8">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                    How fast do I get paid?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    All payouts are handled securely. Once a shift is completed and checked out by both you and the employer, the funds are released from our escrow and transferred directly to your bank account on our weekly deposit day.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    Do I need previous work experience?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Not necessarily! We offer plenty of entry-level shifts. Furthermore, you can participate in online/offline verification assessments to earn badges which qualify you for specialized, premium hourly rates.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                    How does the swiping matching system work?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Students swipe like/dislike on local job cards. Businesses swipe like/dislike on nearby student cards. If a match occurs, a secure, dedicated chatroom opens instantly allowing you to finalise shift details and check-in timing.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                    What are the fees for employers?
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Posting shifts is entirely free. SHIFTLY charges a flat 10% platform administration fee only on completed shifts, covering secure payments, escrow services, and candidate verification workflows.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================================
+         FOOTER
+         ========================================================================= -->
+    <footer class="footer-section">
+        <div class="container text-center text-md-start">
+            <div class="row g-5">
+                <div class="col-md-4">
+                    <h5 class="text-white mb-3"><i class="bi bi-lightning-charge-fill text-danger"></i> SHIFTLY</h5>
+                    <p class="text-muted">Changing the way students earn and companies hire. Connecting top-tier talent with immediate local work.</p>
+                    <div class="d-flex mt-4 justify-content-center justify-content-md-start">
+                        <a href="#" class="social-icon"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="social-icon"><i class="bi bi-twitter-x"></i></a>
+                        <a href="#" class="social-icon"><i class="bi bi-instagram"></i></a>
+                        <a href="#" class="social-icon"><i class="bi bi-linkedin"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-2 offset-md-1">
+                    <h6 class="text-white mb-3">Product</h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2">
+                        <li><a href="#features" class="footer-link">Features</a></li>
+                        <li><a href="#how-it-works" class="footer-link">How it works</a></li>
+                        <li><a href="#faq" class="footer-link">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2">
+                    <h6 class="text-white mb-3">Company</h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2">
+                        <li><a href="#" class="footer-link">About Us</a></li>
+                        <li><a href="#" class="footer-link">Careers</a></li>
+                        <li><a href="#" class="footer-link">Press Kit</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-white mb-3">Legal</h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2">
+                        <li><a href="#" class="footer-link">Terms of Service</a></li>
+                        <li><a href="#" class="footer-link">Privacy Policy</a></li>
+                        <li><a href="#" class="footer-link">Security Policies</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-top border-secondary border-opacity-10 mt-5 pt-4 text-center">
+                <p class="text-muted mb-0">&copy; 2026 SHIFTLY Technologies, Inc. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- =========================================================================
+         SIMULATOR MATCH MODAL OVERLAY
+         ========================================================================= -->
+    <div id="sim-match-modal" class="match-modal-overlay">
+        <div class="match-content">
+            <h2 class="match-title">It's a Shift!</h2>
+            <p class="text-muted mb-4">You and the employer swiped like on each other.</p>
+            <div class="match-avatar-group">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Student Avatar" class="match-avatar match-avatar-user">
+                <div class="match-heart"><i class="bi bi-heart-fill"></i></div>
+                <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=150&q=80" alt="Business Logo" class="match-avatar match-avatar-biz">
+            </div>
+            <h5 class="text-white mb-1" id="match-job-title">Specialty Barista</h5>
+            <p class="text-muted mb-5" id="match-company">Blue Bottle Coffee</p>
+            <div class="d-flex flex-column gap-3">
+                <a href="student/messages.html" class="btn btn-premium-coral"><i class="bi bi-chat-dots-fill"></i> Open Chat</a>
+                <button id="close-match-modal" class="btn btn-premium-outline">Keep Swiping</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Custom JS -->
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
