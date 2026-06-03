@@ -95,6 +95,9 @@
                 <a href="{% url 'student_earnings' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_earnings' %}active{% endif %}">
                     <i class="bi bi-wallet2"></i> Earnings
                 </a>
+                <a href="{% url 'student_matches' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_matches' %}active{% endif %}">
+                    <i class="bi bi-chat-left-heart-fill text-danger"></i> Matches & Chat
+                </a>
                 <a href="{% url 'student_profile_edit' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_profile_edit' %}active{% endif %}">
                     <i class="bi bi-person-fill-gear"></i> Edit Profile
                 </a>

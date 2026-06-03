@@ -144,40 +144,18 @@ class SwipeActionView(StudentRequiredMixin, View):
             if not created:
                 return JsonResponse({'message': 'Already swiped on this job'}, status=200)
 
-            matched = False
-            # Check for simulated match: If user liked the job, there is a 50% chance of an instant match
-            if direction == 'like' and Swipe.objects.filter(student=profile, job=job).exists():
-                # Let's say Blue Bottle Coffee automatically "likes" back if they match
-                # Create a Match and a JobApplication
-                matched = True
-                match = Match.objects.create(
+            # Create application if student liked the job
+            if direction == 'like':
+                JobApplication.objects.get_or_create(
                     student=profile,
                     job=job,
-                    status='active'
-                )
-                JobApplication.objects.create(
-                    match=match,
-                    student=profile,
-                    job=job,
-                    status='applied'
-                )
-                
-                # Notify User
-                Notification.objects.create(
-                    user=request.user,
-                    type='match',
-                    title="It's a Shift Match!",
-                    body=f"You matched with {job.title} at {job.business.company_name}. Open chat to confirm!"
+                    defaults={'status': 'applied'}
                 )
         
         return JsonResponse({
             'success': True,
-            'matched': matched,
-            'match_details': {
-                'job_title': job.title,
-                'company': job.business.company_name,
-                'company_logo': job.business.company_logo_url or '',
-            } if matched else None
+            'matched': False,
+            'match_details': None
         })
 
 

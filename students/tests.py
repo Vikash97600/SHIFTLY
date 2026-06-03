@@ -133,6 +133,6 @@ class StudentViewsTests(TestCase):
         # Check that swipe was recorded
         self.assertTrue(Swipe.objects.filter(student=self.student_profile, job=self.job, direction='like').exists())
         
-        # Check that match occurred (since direction was 'like')
-        self.assertTrue(Match.objects.filter(student=self.student_profile, job=self.job).exists())
+        # Check that match did NOT occur automatically (requires business owner acceptance)
+        self.assertFalse(Match.objects.filter(student=self.student_profile, job=self.job).exists())
         self.assertTrue(JobApplication.objects.filter(student=self.student_profile, job=self.job).exists())

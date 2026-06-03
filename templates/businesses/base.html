@@ -96,6 +96,9 @@
                 <a href="{% url 'business_applicants' %}" class="sidebar-link {% if request.resolver_match.url_name == 'business_applicants' %}active{% endif %}">
                     <i class="bi bi-people-fill"></i> Applicants & Hiring
                 </a>
+                <a href="{% url 'business_matches' %}" class="sidebar-link {% if request.resolver_match.url_name == 'business_matches' %}active{% endif %}">
+                    <i class="bi bi-chat-left-heart-fill text-primary"></i> Active Matches
+                </a>
                 <a href="{% url 'business_profile_edit' %}" class="sidebar-link {% if request.resolver_match.url_name == 'business_profile_edit' %}active{% endif %}">
                     <i class="bi bi-gear-fill"></i> Company Settings
                 </a>

@@ -134,13 +134,17 @@ class HireActionView(BusinessRequiredMixin, View):
             return JsonResponse({'error': 'No available slots left on this shift'}, status=400)
 
         with transaction.atomic():
-            # Update Application and Match Status
-            application.status = 'accepted'
-            application.save()
+            # Create or update Match record
+            match, created = Match.objects.update_or_create(
+                student=application.student,
+                job=job,
+                defaults={'status': 'hired'}
+            )
 
-            if application.match:
-                application.match.status = 'hired'
-                application.match.save()
+            # Update Application and Match Link
+            application.status = 'accepted'
+            application.match = match
+            application.save()
 
             # Increment slots filled
             job.slots_filled += 1
@@ -162,7 +166,7 @@ class HireActionView(BusinessRequiredMixin, View):
             fee = gross * Decimal('0.10')
             net = gross - fee
 
-            txn_ref = f"TXN-{application.match.uuid.hex[:8].upper() if application.match else timezone.now().timestamp()}"
+            txn_ref = f"TXN-{match.uuid.hex[:8].upper()}"
             Earning.objects.create(
                 student=application.student,
                 business=profile,
@@ -177,9 +181,17 @@ class HireActionView(BusinessRequiredMixin, View):
             # Send Match Notification to Student User
             Notification.objects.create(
                 user=application.student.user,
+                type='match',
+                title="It's a Shift Match!",
+                body=f"You have matched with '{job.title}' at {profile.company_name}."
+            )
+
+            # Send Payment Escrow Notification to Student User
+            Notification.objects.create(
+                user=application.student.user,
                 type='payment',
-                title="Hired for Shift!",
-                body=f"You have been hired for '{job.title}' by {profile.company_name}. Payout is locked in escrow."
+                title="Payout Escrow Locked",
+                body=f"Payout for '{job.title}' at {profile.company_name} is locked in escrow."
             )
 
         return JsonResponse({

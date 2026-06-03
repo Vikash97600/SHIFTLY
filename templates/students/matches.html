@@ -1,0 +1,322 @@
+{% extends 'students/base.html' %}
+
+{% block title %}My Matches & Chats - SHIFTLY{% endblock %}
+
+{% block extra_css %}
+<style>
+    .match-card {
+        background-color: var(--dark-card);
+        border: 1px solid var(--dark-border);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: var(--transition-smooth);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .match-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(255, 65, 108, 0.25);
+        box-shadow: 0 12px 30px rgba(255, 65, 108, 0.05);
+    }
+
+    .company-banner {
+        height: 80px;
+        background: linear-gradient(135deg, rgba(255, 75, 43, 0.1) 0%, rgba(255, 65, 108, 0.2) 100%);
+        position: relative;
+    }
+
+    .company-avatar-wrapper {
+        position: absolute;
+        bottom: -25px;
+        left: 20px;
+        border-radius: 50%;
+        padding: 4px;
+        background: var(--dark-card);
+        border: 1px solid var(--dark-border);
+    }
+
+    .company-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .match-body {
+        padding: 40px 24px 24px 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .badge-pay {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-light);
+    }
+
+    .pulse-online {
+        width: 10px;
+        height: 10px;
+        background-color: var(--success-emerald);
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-online 1.6s infinite;
+    }
+
+    @keyframes pulse-online {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+        }
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        }
+    }
+
+    /* Modal styles */
+    .chat-modal-dialog {
+        max-width: 600px;
+    }
+
+    .chat-modal-content {
+        background-color: #0b0f19;
+        border: 1px solid var(--dark-border);
+        border-radius: 24px;
+        overflow: hidden;
+    }
+
+    .chat-header {
+        background: #111827;
+        border-bottom: 1px solid var(--dark-border);
+        padding: 20px 24px;
+    }
+
+    .chat-history {
+        height: 350px;
+        overflow-y: auto;
+        padding: 24px;
+        background: rgba(15, 19, 34, 0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .chat-bubble {
+        max-width: 75%;
+        padding: 12px 18px;
+        border-radius: 18px;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .chat-bubble.incoming {
+        background-color: var(--dark-card);
+        color: var(--text-light);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+        border: 1px solid var(--dark-border);
+    }
+
+    .chat-bubble.outgoing {
+        background: var(--primary-gradient);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+    }
+
+    .chat-input-area {
+        padding: 18px 24px;
+        background: #111827;
+        border-top: 1px solid var(--dark-border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="text-white mb-1">Matches & Chat</h1>
+            <p class="text-muted mb-0">Directly connect with businesses after matching to confirm schedules and logistics.</p>
+        </div>
+        <a href="{% url 'student_swipe' %}" class="btn btn-premium-coral"><i class="bi bi-suit-heart-fill"></i> Keep Swiping</a>
+    </div>
+
+    {% if matches %}
+        <div class="row g-4">
+            {% for m in matches %}
+                <div class="col-xl-4 col-md-6">
+                    <div class="match-card">
+                        <!-- Card Banner & Avatar -->
+                        <div class="company-banner"></div>
+                        <div class="company-avatar-wrapper">
+                            <img src="{{ m.job.business.company_logo_url|default:'https://images.unsplash.com/photo-1572021335469-31706a17aaef?auto=format&fit=crop&w=150&q=80' }}" alt="{{ m.job.business.company_name }}" class="company-avatar">
+                        </div>
+
+                        <!-- Match Content -->
+                        <div class="match-body">
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2.5 py-1 text-xs">
+                                        <i class="bi bi-patch-check-fill"></i> Shift Matched
+                                    </span>
+                                    <span class="text-xs text-muted d-flex align-items-center gap-1">
+                                        <span class="pulse-online"></span> Active
+                                    </span>
+                                </div>
+                                <h4 class="text-white mb-1 mt-2">{{ m.job.title }}</h4>
+                                <h6 class="text-muted fw-normal mb-3">{{ m.job.business.company_name }}</h6>
+                                
+                                <div class="d-flex flex-column gap-2 text-muted small border-top border-secondary border-opacity-10 pt-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-cash text-success"></i>
+                                        <span class="text-white fw-bold">${{ m.job.base_pay }}/hr</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-calendar-event"></i>
+                                        <span>{{ m.job.start_date|date:"F d, Y" }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-clock"></i>
+                                        <span>{{ m.job.shift_start_time|time:"H:i" }} - {{ m.job.shift_end_time|time:"H:i" }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-geo-alt-fill text-danger"></i>
+                                        <span>{{ m.job.location_name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-premium-coral rounded-pill open-chat-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#chatModal"
+                                        data-company="{{ m.job.business.company_name }}"
+                                        data-job="{{ m.job.title }}"
+                                        data-logo="{{ m.job.business.company_logo_url|default:'https://images.unsplash.com/photo-1572021335469-31706a17aaef?auto=format&fit=crop&w=150&q=80' }}">
+                                    <i class="bi bi-chat-left-dots-fill"></i> Start Chat
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="dash-card p-5 text-center">
+            <i class="bi bi-chat-left-heart text-muted display-1"></i>
+            <h3 class="text-white mt-4">No Active Matches Yet</h3>
+            <p class="text-muted max-w-md mx-auto mt-2">When you swipe right on shifts and employer businesses accept your application, they'll appear here as active chats.</p>
+            <a href="{% url 'student_swipe' %}" class="btn btn-premium-coral mt-4"><i class="bi bi-suit-heart-fill"></i> Go Swipe Shifts</a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- PREMIUM CHAT ROOM MODAL -->
+<div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered chat-modal-dialog">
+        <div class="modal-content chat-modal-content">
+            <!-- Modal Header -->
+            <div class="chat-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <img id="chat-modal-logo" src="" alt="Company Logo" class="rounded-circle border border-secondary border-opacity-20" style="width: 48px; height: 48px; object-fit: cover;">
+                    <div>
+                        <h5 class="text-white mb-0" id="chat-modal-company-name">Company Name</h5>
+                        <small class="text-muted" id="chat-modal-job-title">Job Title</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <!-- Chat Messages Area -->
+            <div class="chat-history" id="chat-messages-container">
+                <div class="chat-bubble incoming">
+                    Hello! We saw you matched for the <strong id="chat-intro-job">shift</strong>. We're excited to have you on board! Feel free to ask any questions here about parking, uniform, or shift details.
+                </div>
+            </div>
+            
+            <!-- Chat Input Area -->
+            <div class="chat-input-area">
+                <form id="chat-message-form" class="d-flex gap-2">
+                    <input type="text" id="chat-message-input" class="form-control bg-dark border-secondary border-opacity-25 text-white rounded-pill px-4 py-2" placeholder="Type your message..." required autocomplete="off">
+                    <button type="submit" class="btn btn-premium-coral rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-send-fill fs-5"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const chatModal = document.getElementById("chatModal");
+        const chatHistory = document.getElementById("chat-messages-container");
+        const chatForm = document.getElementById("chat-message-form");
+        const chatInput = document.getElementById("chat-message-input");
+
+        chatModal.addEventListener("show.bs.modal", (event) => {
+            // Button that triggered the modal
+            const button = event.relatedTarget;
+            
+            // Extract info from data-* attributes
+            const companyName = button.getAttribute("data-company");
+            const jobTitle = button.getAttribute("data-job");
+            const logoUrl = button.getAttribute("data-logo");
+
+            // Update modal content
+            document.getElementById("chat-modal-company-name").textContent = companyName;
+            document.getElementById("chat-modal-job-title").textContent = jobTitle;
+            document.getElementById("chat-modal-logo").src = logoUrl;
+            document.getElementById("chat-intro-job").textContent = jobTitle;
+
+            // Reset chat history except intro
+            chatHistory.innerHTML = `
+                <div class="chat-bubble incoming">
+                    Hello! We saw you matched for the <strong>${jobTitle}</strong> shift. We're excited to have you on board! Feel free to ask any questions here about parking, uniform, or shift details.
+                </div>
+            `;
+        });
+
+        chatForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const messageText = chatInput.value.trim();
+            if (!messageText) return;
+
+            // Create and append outgoing bubble
+            const bubble = document.createElement("div");
+            bubble.className = "chat-bubble outgoing";
+            bubble.textContent = messageText;
+            chatHistory.appendChild(bubble);
+
+            // Clear input
+            chatInput.value = "";
+
+            // Auto scroll to bottom
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            // Simulate automatic employer response after 1.5 seconds
+            setTimeout(() => {
+                const reply = document.createElement("div");
+                reply.className = "chat-bubble incoming";
+                reply.innerHTML = `Thanks for writing! A team lead will review your message shortly and confirm instructions. See you on the shift!`;
+                chatHistory.appendChild(reply);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }, 1200);
+        });
+    });
+</script>
+{% endblock %}
