@@ -22,6 +22,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
+    "channels",
 
     # Custom SHIFTLY Apps
     "accounts",
@@ -48,6 +50,16 @@ INSTALLED_APPS = [
     "reports",
     "adminpanel",
 ]
+
+# ASGI Configuration
+ASGI_APPLICATION = "config.asgi.application"
+
+# Channel Layers (Using in-memory for testing/local development)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

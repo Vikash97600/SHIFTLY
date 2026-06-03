@@ -11,6 +11,8 @@ from students.models import StudentProfile
 from businesses.views import BusinessRequiredMixin
 from businesses.models import BusinessProfile
 
+from chat.models import ChatRoom, ChatParticipant
+
 class MatchViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows matches to be viewed.
@@ -39,7 +41,15 @@ class StudentMatchesView(StudentRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profile = get_object_or_404(StudentProfile, user=self.request.user)
-        matches = Match.objects.filter(student=profile, status='active').select_related('job__business')
+        matches = Match.objects.filter(student=profile, status='active').select_related('job__business', 'chat_room')
+        
+        # Safeguard: Ensure every match has a ChatRoom
+        for m in matches:
+            chat_room, created = ChatRoom.objects.get_or_create(match=m)
+            if created:
+                ChatParticipant.objects.get_or_create(chat_room=chat_room, user=m.student.user)
+                ChatParticipant.objects.get_or_create(chat_room=chat_room, user=m.job.business.user)
+
         context.update({
             'profile': profile,
             'matches': matches,
@@ -56,7 +66,15 @@ class BusinessMatchesView(BusinessRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profile = get_object_or_404(BusinessProfile, user=self.request.user)
-        matches = Match.objects.filter(job__business=profile, status='active').select_related('student', 'job')
+        matches = Match.objects.filter(job__business=profile, status='active').select_related('student', 'job', 'chat_room')
+        
+        # Safeguard: Ensure every match has a ChatRoom
+        for m in matches:
+            chat_room, created = ChatRoom.objects.get_or_create(match=m)
+            if created:
+                ChatParticipant.objects.get_or_create(chat_room=chat_room, user=m.student.user)
+                ChatParticipant.objects.get_or_create(chat_room=chat_room, user=m.job.business.user)
+
         context.update({
             'profile': profile,
             'matches': matches,

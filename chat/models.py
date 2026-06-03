@@ -41,3 +41,15 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"Message by {self.sender.email} at {self.created_at}"
+
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Match)
+def create_match_chat_room(sender, instance, created, **kwargs):
+    # Whenever a Match is created, automatically create a ChatRoom and add participants
+    chat_room, room_created = ChatRoom.objects.get_or_create(match=instance)
+    # Ensure participants are created for both student and business owner
+    ChatParticipant.objects.get_or_create(chat_room=chat_room, user=instance.student.user)
+    ChatParticipant.objects.get_or_create(chat_room=chat_room, user=instance.job.business.user)

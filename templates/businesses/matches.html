@@ -78,7 +78,7 @@
         }
     }
 
-    /* Modal styles */
+    /* Modal & Chat styles */
     .chat-modal-dialog {
         max-width: 600px;
     }
@@ -112,6 +112,8 @@
         border-radius: 18px;
         font-size: 0.95rem;
         line-height: 1.4;
+        position: relative;
+        word-wrap: break-word;
     }
 
     .chat-bubble.incoming {
@@ -129,10 +131,49 @@
         border-bottom-right-radius: 4px;
     }
 
+    .chat-meta {
+        font-size: 0.72rem;
+        opacity: 0.7;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        justify-content: flex-end;
+    }
+
+    .chat-bubble.incoming .chat-meta {
+        justify-content: flex-start;
+        color: var(--text-muted);
+    }
+
+    .chat-bubble.outgoing .chat-meta {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
     .chat-input-area {
         padding: 18px 24px;
         background: #111827;
         border-top: 1px solid var(--dark-border);
+    }
+
+    /* Typing blinker */
+    .typing-dots span {
+        animation: typing-blink 1.4s infinite both;
+        font-weight: bold;
+        display: inline-block;
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+    .typing-dots span:nth-child(2) {
+        animation-delay: .2s;
+    }
+    .typing-dots span:nth-child(3) {
+        animation-delay: .4s;
+    }
+    @keyframes typing-blink {
+        0% { opacity: .2; }
+        20% { opacity: 1; }
+        100% { opacity: .2; }
     }
 </style>
 {% endblock %}
@@ -196,6 +237,7 @@
                                 <button class="btn btn-premium-outline flex-grow-1 open-chat-btn" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#chatModal"
+                                        data-room="{{ m.chat_room.uuid }}"
                                         data-student="{{ m.student.first_name }} {{ m.student.last_name }}"
                                         data-job="{{ m.job.title }}"
                                         data-logo="{{ m.student.profile_picture_url|default:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80' }}">
@@ -203,7 +245,7 @@
                                 </button>
                                 
                                 {% if m.reviews.all %}
-                                    <button class="btn btn-secondary rounded-pill btn-sm px-3" disabled><i class="bi bi-check-circle-fill text-success"></i> Rated</button>
+                                    <button class="btn btn-secondary rounded-pill btn-sm px-3" disabled><i class="bi bi-check-circle-fill text-success"></i> Hired & Rated</button>
                                 {% elif m.application %}
                                     <a href="{% url 'business_rate_student' m.application.id %}" class="btn btn-premium-coral btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center"><i class="bi bi-star-fill text-warning me-1"></i> Rate</a>
                                 {% endif %}
@@ -241,16 +283,27 @@
             
             <!-- Chat Messages Area -->
             <div class="chat-history" id="chat-messages-container">
-                <div class="chat-bubble incoming">
-                    Hello! Thanks for hiring me for the <strong id="chat-intro-job">shift</strong>. I'm looking forward to working with you! Let me know if there are any specific uniform or arrival instructions.
-                </div>
+                <!-- Messages load dynamically -->
+            </div>
+
+            <!-- Typing indicator -->
+            <div id="chat-typing-indicator" class="px-4 py-1 text-muted small" style="background: rgba(15, 19, 34, 0.4); display: none;">
+                <span class="fw-semibold text-white" id="typing-user">Student</span> is typing
+                <span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>
             </div>
             
             <!-- Chat Input Area -->
             <div class="chat-input-area">
-                <form id="chat-message-form" class="d-flex gap-2">
+                <form id="chat-message-form" class="d-flex gap-2 align-items-center">
+                    {% csrf_token %}
+                    <!-- File sharing triggers -->
+                    <button type="button" id="chat-file-btn" class="btn btn-dark border border-secondary border-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-paperclip fs-5 text-muted"></i>
+                    </button>
+                    <input type="file" id="chat-file-input" style="display:none;" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx,.txt,.csv,.xlsx">
+
                     <input type="text" id="chat-message-input" class="form-control bg-dark border-secondary border-opacity-25 text-white rounded-pill px-4 py-2" placeholder="Type your message..." required autocomplete="off">
-                    <button type="submit" class="btn btn-premium-coral rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                    <button type="submit" id="chat-send-btn" class="btn btn-premium-coral rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
                         <i class="bi bi-send-fill fs-5"></i>
                     </button>
                 </form>
@@ -267,47 +320,266 @@
         const chatHistory = document.getElementById("chat-messages-container");
         const chatForm = document.getElementById("chat-message-form");
         const chatInput = document.getElementById("chat-message-input");
+        const typingIndicator = document.getElementById("chat-typing-indicator");
+        const typingUser = document.getElementById("typing-user");
+        const fileBtn = document.getElementById("chat-file-btn");
+        const fileInput = document.getElementById("chat-file-input");
+
+        const currentUserEmail = "{{ request.user.email }}";
+
+        let socket = null;
+        let roomUuid = null;
+        let studentName = null;
+        let typingTimeout = null;
+        let isCurrentlyTyping = false;
 
         chatModal.addEventListener("show.bs.modal", (event) => {
             const button = event.relatedTarget;
             
-            const studentName = button.getAttribute("data-student");
+            roomUuid = button.getAttribute("data-room");
+            studentName = button.getAttribute("data-student");
             const jobTitle = button.getAttribute("data-job");
             const logoUrl = button.getAttribute("data-logo");
 
             document.getElementById("chat-modal-student-name").textContent = studentName;
             document.getElementById("chat-modal-job-title").textContent = jobTitle;
             document.getElementById("chat-modal-logo").src = logoUrl;
-            document.getElementById("chat-intro-job").textContent = jobTitle;
+            typingUser.textContent = studentName;
 
-            chatHistory.innerHTML = `
-                <div class="chat-bubble incoming">
-                    Hello! Thanks for hiring me for the <strong>${jobTitle}</strong> shift. I'm looking forward to working with you! Let me know if there are any specific uniform or arrival instructions.
-                </div>
-            `;
+            chatHistory.innerHTML = '<div class="text-center py-4"><span class="spinner-border spinner-border-sm text-muted"></span> Loading messages...</div>';
+            typingIndicator.style.display = "none";
+            isCurrentlyTyping = false;
+
+            // 1. Fetch History via REST API
+            fetch(`/api/v1/chat/history/${roomUuid}/`)
+                .then(res => res.json())
+                .then(messages => {
+                    chatHistory.innerHTML = "";
+                    if (messages.length === 0) {
+                        chatHistory.innerHTML = `
+                            <div class="text-center text-muted py-5 px-3">
+                                <i class="bi bi-chat-heart-fill display-4 text-gradient-indigo mb-3 d-block"></i>
+                                <h6 class="text-white">Start Your Conversation</h6>
+                                <p class="small mb-0">You've successfully matched! Coordinate details, schedules, and uniform instructions here.</p>
+                            </div>
+                        `;
+                    } else {
+                        messages.forEach(msg => {
+                            appendMessageBubble(msg);
+                        });
+                    }
+                    scrollToBottom();
+
+                    // 2. Establish Secure WebSocket Connection
+                    const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+                    const ws_url = `${ws_scheme}://${window.location.host}/ws/chat/${roomUuid}/`;
+                    
+                    socket = new WebSocket(ws_url);
+
+                    socket.onopen = () => {
+                        console.log("WebSocket connected to room:", roomUuid);
+                        sendReadReceipt();
+                    };
+
+                    socket.onmessage = (e) => {
+                        const data = JSON.parse(e.data);
+                        
+                        if (data.type === 'message') {
+                            const emptyPlaceholder = chatHistory.querySelector(".text-center");
+                            if (emptyPlaceholder) emptyPlaceholder.remove();
+
+                            appendMessageBubble(data);
+                            scrollToBottom();
+
+                            if (data.sender_email !== currentUserEmail) {
+                                sendReadReceipt();
+                            }
+                        } else if (data.type === 'typing') {
+                            if (data.sender_email !== currentUserEmail) {
+                                typingIndicator.style.display = data.is_typing ? "block" : "none";
+                                scrollToBottom();
+                            }
+                        } else if (data.type === 'read_receipt') {
+                            if (data.reader_email !== currentUserEmail) {
+                                document.querySelectorAll(".receipt-check").forEach(chk => {
+                                    chk.className = "bi bi-check-all text-info receipt-check";
+                                });
+                            }
+                        }
+                    };
+
+                    socket.onclose = (e) => {
+                        console.log("WebSocket disconnected from room:", roomUuid, e);
+                    };
+
+                    socket.onerror = (err) => {
+                        console.error("WebSocket encountered an error:", err);
+                    };
+                })
+                .catch(err => {
+                    console.error("Failed to load chat history:", err);
+                    chatHistory.innerHTML = '<div class="text-center text-danger py-4">Failed to load chat logs. Please retry.</div>';
+                });
         });
 
+        chatModal.addEventListener("hidden.bs.modal", () => {
+            sendTypingStatus(false);
+            if (socket) {
+                socket.close();
+                socket = null;
+            }
+            roomUuid = null;
+        });
+
+        chatInput.addEventListener("input", () => {
+            if (!isCurrentlyTyping) {
+                sendTypingStatus(true);
+            }
+            
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                sendTypingStatus(false);
+            }, 1500);
+        });
+
+        chatInput.addEventListener("blur", () => {
+            sendTypingStatus(false);
+        });
+
+        // Form Submit
         chatForm.addEventListener("submit", (e) => {
             e.preventDefault();
-            const messageText = chatInput.value.trim();
-            if (!messageText) return;
+            const text = chatInput.value.trim();
+            if (!text || !socket || socket.readyState !== WebSocket.OPEN) return;
 
-            const bubble = document.createElement("div");
-            bubble.className = "chat-bubble outgoing";
-            bubble.textContent = messageText;
-            chatHistory.appendChild(bubble);
+            socket.send(jsonPayload('send_message', {
+                'message': text,
+                'message_type': 'text'
+            }));
 
             chatInput.value = "";
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-
-            setTimeout(() => {
-                const reply = document.createElement("div");
-                reply.className = "chat-bubble incoming";
-                reply.innerHTML = `Perfect, got it! Looking forward to it. I'll make sure to arrive 10 minutes early.`;
-                chatHistory.appendChild(reply);
-                chatHistory.scrollTop = chatHistory.scrollHeight;
-            }, 1200);
+            sendTypingStatus(false);
         });
+
+        // File attachment events
+        fileBtn.addEventListener("click", () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener("change", () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const csrfToken = document.querySelector("#chat-message-form [name=csrfmiddlewaretoken]").value;
+
+            fileBtn.disabled = true;
+            fileBtn.innerHTML = `<span class="spinner-border spinner-border-sm text-muted"></span>`;
+
+            fetch('/api/v1/chat/upload/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(d => { throw new Error(d.error || "Upload failed") });
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(jsonPayload('send_message', {
+                        'message': data.file_url,
+                        'message_type': data.message_type
+                    }));
+                }
+            })
+            .catch(err => {
+                alert("Upload error: " + err.message);
+            })
+            .finally(() => {
+                fileInput.value = "";
+                fileBtn.disabled = false;
+                fileBtn.innerHTML = `<i class="bi bi-paperclip fs-5 text-muted"></i>`;
+            });
+        });
+
+        // Helper functions
+        function jsonPayload(type, dict) {
+            return JSON.stringify({ type, ...dict });
+        }
+
+        function sendTypingStatus(isTyping) {
+            isCurrentlyTyping = isTyping;
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(jsonPayload('typing_status', { is_typing: isTyping }));
+            }
+        }
+
+        function sendReadReceipt() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(jsonPayload('read_receipt', {}));
+            }
+        }
+
+        function appendMessageBubble(msg) {
+            const isMe = msg.sender_email === currentUserEmail;
+            
+            const bubble = document.createElement("div");
+            bubble.className = `chat-bubble ${isMe ? 'outgoing' : 'incoming'}`;
+            
+            let bodyHTML = "";
+            if (msg.message_type === 'image') {
+                bodyHTML = `<img src="${msg.message_content}" class="img-fluid rounded-3 border border-secondary border-opacity-10 mt-1" style="max-height: 200px; object-fit: cover; cursor: pointer;" onclick="window.open('${msg.message_content}', '_blank')">`;
+            } else if (msg.message_type === 'document') {
+                const parts = msg.message_content.split("/");
+                const filename = decodeURIComponent(parts[parts.length - 1]);
+                bodyHTML = `
+                    <div class="mt-1">
+                        <a href="${msg.message_content}" target="_blank" class="btn btn-sm btn-dark border border-secondary border-opacity-20 text-white rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-arrow-down-fill text-primary"></i> ${filename.slice(-20)}
+                        </a>
+                    </div>
+                `;
+            } else {
+                bodyHTML = `<div>${escapeHTML(msg.message_content)}</div>`;
+            }
+
+            const date = new Date(msg.created_at);
+            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let checkmarkHTML = "";
+            if (isMe) {
+                checkmarkHTML = msg.is_read 
+                    ? `<i class="bi bi-check-all text-info receipt-check ms-1"></i>` 
+                    : `<i class="bi bi-check receipt-check ms-1"></i>`;
+            }
+
+            bubble.innerHTML = `
+                ${bodyHTML}
+                <div class="chat-meta">
+                    <span>${timeStr}</span>
+                    ${checkmarkHTML}
+                </div>
+            `;
+            
+            chatHistory.appendChild(bubble);
+        }
+
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
     });
 </script>
 {% endblock %}
