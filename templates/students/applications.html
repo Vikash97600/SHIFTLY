@@ -49,8 +49,16 @@
                                     </span>
                                 </td>
                                 <td class="text-end">
-                                    {% if app.match %}
-                                        <a href="#" class="btn btn-premium-outline btn-sm rounded-pill"><i class="bi bi-chat-dots"></i> Message</a>
+                                    {% if app.match and app.match.chat_room %}
+                                        <a href="{% url 'student_matches' %}?open={{ app.match.chat_room.uuid }}"
+                                           class="btn btn-premium-outline btn-sm rounded-pill">
+                                            <i class="bi bi-chat-dots"></i> Message
+                                        </a>
+                                    {% elif app.match %}
+                                        <a href="{% url 'student_matches' %}"
+                                           class="btn btn-premium-outline btn-sm rounded-pill">
+                                            <i class="bi bi-chat-dots"></i> Message
+                                        </a>
                                     {% else %}
                                         <button class="btn btn-premium-outline btn-sm rounded-pill" disabled>Pending Match</button>
                                     {% endif %}

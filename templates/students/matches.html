@@ -597,6 +597,21 @@
                 tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
             );
         }
+
+        // ---- AUTO-OPEN CHAT VIA ?open=<uuid> QUERY PARAM ----
+        // When navigating from the Applications tab via the Message button,
+        // automatically open the correct chat room without extra clicks.
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoOpenRoom = urlParams.get("open");
+        if (autoOpenRoom) {
+            const targetBtn = document.querySelector(`.open-chat-btn[data-room="${autoOpenRoom}"]`);
+            if (targetBtn) {
+                // Small delay to let Bootstrap fully initialise
+                setTimeout(() => targetBtn.click(), 300);
+                // Clean the URL so refreshing doesn't re-trigger
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
     });
 </script>
 {% endblock %}

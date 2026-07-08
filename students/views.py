@@ -180,7 +180,11 @@ class ApplicationsListView(StudentRequiredMixin, ListView):
 
     def get_queryset(self):
         profile = get_object_or_404(StudentProfile, user=self.request.user)
-        return JobApplication.objects.filter(student=profile).select_related('job__business').order_by('-created_at')
+        return JobApplication.objects.filter(student=profile).select_related(
+            'job__business',
+            'match',
+            'match__chat_room',
+        ).order_by('-created_at')
 
 
 class EarningsListView(StudentRequiredMixin, TemplateView):
