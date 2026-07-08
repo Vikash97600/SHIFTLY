@@ -305,3 +305,54 @@ class StudentProfileView(drf_generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return StudentProfile.objects.get(user=self.request.user)
+
+
+class AddStudentSkillView(StudentRequiredMixin, View):
+    """
+    AJAX POST endpoint: adds a skill to the student's profile.
+    Accepts: skill_id (int), level (str: beginner|intermediate|advanced)
+    Returns JSON response.
+    """
+    def post(self, request, *args, **kwargs):
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        skill_id = request.POST.get('skill_id')
+        level = request.POST.get('level', StudentSkill.Level.BEGINNER)
+
+        if not skill_id:
+            return JsonResponse({'error': 'No skill selected.'}, status=400)
+
+        skill = get_object_or_404(Skill, id=skill_id)
+
+        if level not in [c[0] for c in StudentSkill.Level.choices]:
+            level = StudentSkill.Level.BEGINNER
+
+        student_skill, created = StudentSkill.objects.get_or_create(
+            student=profile,
+            skill=skill,
+            defaults={'level': level}
+        )
+
+        if not created:
+            return JsonResponse({'error': f'You already have "{skill.name}" in your skills.'}, status=400)
+
+        return JsonResponse({
+            'success': True,
+            'skill_id': student_skill.id,
+            'skill_name': skill.name,
+            'level': student_skill.level,
+            'level_display': student_skill.get_level_display(),
+        })
+
+
+class RemoveStudentSkillView(StudentRequiredMixin, View):
+    """
+    AJAX POST endpoint: removes a StudentSkill record by its ID.
+    Only allows the owning student to remove their own skill.
+    """
+    def post(self, request, *args, **kwargs):
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        student_skill_id = kwargs.get('pk')
+        student_skill = get_object_or_404(StudentSkill, id=student_skill_id, student=profile)
+        skill_name = student_skill.skill.name
+        student_skill.delete()
+        return JsonResponse({'success': True, 'removed_skill': skill_name})

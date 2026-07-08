@@ -9,7 +9,9 @@ from .views import (
     EarningsListView,
     NotificationsListView,
     MarkNotificationsReadView,
-    SubmitBusinessRatingView
+    SubmitBusinessRatingView,
+    AddStudentSkillView,
+    RemoveStudentSkillView,
 )
 
 urlpatterns = [
@@ -23,4 +25,6 @@ urlpatterns = [
     path('rate/<int:match_id>/', SubmitBusinessRatingView.as_view(), name='student_rate_business'),
     path('notifications/', NotificationsListView.as_view(), name='student_notifications'),
     path('notifications/read/', MarkNotificationsReadView.as_view(), name='student_notifications_read'),
+    path('skills/add/', AddStudentSkillView.as_view(), name='student_skill_add'),
+    path('skills/remove/<int:pk>/', RemoveStudentSkillView.as_view(), name='student_skill_remove'),
 ]
