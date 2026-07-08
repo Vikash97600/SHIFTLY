@@ -49,3 +49,20 @@ class JobManageView(BusinessRequiredMixin, ListView):
     def get_queryset(self):
         profile = get_object_or_404(BusinessProfile, user=self.request.user)
         return JobPosting.objects.filter(business=profile).order_by('-created_at')
+
+
+class JobStatusUpdateView(BusinessRequiredMixin, View):
+    """
+    Handles updating the status of a specific job posting.
+    """
+    def post(self, request, job_id):
+        profile = get_object_or_404(BusinessProfile, user=request.user)
+        job = get_object_or_404(JobPosting, id=job_id, business=profile)
+        new_status = request.POST.get('status')
+        if new_status in JobPosting.JobStatus.values:
+            job.status = new_status
+            job.save()
+            messages.success(request, f"Status of '{job.title}' updated to {job.get_status_display()}.")
+        else:
+            messages.error(request, "Invalid status choice.")
+        return redirect('job_management')

@@ -25,10 +25,10 @@ class MatchViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         if user.role == 'student':
             profile = get_object_or_404(StudentProfile, user=user)
-            return Match.objects.filter(student=profile, status='active').select_related('student', 'job__business')
+            return Match.objects.filter(student=profile, status__in=['active', 'hired']).select_related('student', 'job__business')
         elif user.role == 'business':
             profile = get_object_or_404(BusinessProfile, user=user)
-            return Match.objects.filter(job__business=profile, status='active').select_related('student', 'job__business')
+            return Match.objects.filter(job__business=profile, status__in=['active', 'hired']).select_related('student', 'job__business')
         return Match.objects.none()
 
 
@@ -41,7 +41,7 @@ class StudentMatchesView(StudentRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profile = get_object_or_404(StudentProfile, user=self.request.user)
-        matches = Match.objects.filter(student=profile, status='active').select_related('job__business', 'chat_room')
+        matches = Match.objects.filter(student=profile, status__in=['active', 'hired']).select_related('job__business', 'chat_room')
         
         # Safeguard: Ensure every match has a ChatRoom
         for m in matches:
@@ -66,7 +66,7 @@ class BusinessMatchesView(BusinessRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profile = get_object_or_404(BusinessProfile, user=self.request.user)
-        matches = Match.objects.filter(job__business=profile, status='active').select_related('student', 'job', 'chat_room')
+        matches = Match.objects.filter(job__business=profile, status__in=['active', 'hired']).select_related('student', 'job', 'chat_room')
         
         # Safeguard: Ensure every match has a ChatRoom
         for m in matches:

@@ -43,6 +43,14 @@ class JobPosting(models.Model):
     def __str__(self):
         return f"{self.title} at {self.business.company_name}"
 
+    @property
+    def hired_matches(self):
+        return self.matches.filter(status='hired').select_related('student')
+
+    @property
+    def applied_candidates_count(self):
+        return self.applications.filter(status='applied').count()
+
 
 class JobRequiredSkill(models.Model):
     class Priority(models.TextChoices):

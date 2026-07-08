@@ -13,7 +13,6 @@ class JobPostingForm(forms.ModelForm):
             'latitude',
             'longitude',
             'base_pay',
-            'rate_type',
             'start_date',
             'end_date',
             'shift_start_time',

@@ -54,15 +54,74 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge 
-                                        {% if job.status == 'active' %}bg-success
-                                        {% elif job.status == 'filled' %}bg-info
-                                        {% else %}bg-secondary{% endif %} 
-                                        bg-opacity-10 
-                                        text-{% if job.status == 'active' %}success{% elif job.status == 'filled' %}info{% else %}secondary{% endif %} 
-                                        px-2.5 py-1.5 rounded-pill">
-                                        {{ job.status|capfirst }}
-                                    </span>
+                                    <div class="dropdown">
+                                        <button class="badge 
+                                            {% if job.status == 'active' %}bg-success text-success
+                                            {% elif job.status == 'filled' %}bg-info text-info
+                                            {% elif job.status == 'archived' %}bg-secondary text-secondary
+                                            {% elif job.status == 'cancelled' %}bg-danger text-danger
+                                            {% else %}bg-warning text-warning{% endif %} 
+                                            bg-opacity-10 
+                                            px-2.5 py-1.5 rounded-pill border-0 dropdown-toggle" 
+                                            type="button" 
+                                            data-bs-toggle="dropdown" 
+                                            aria-expanded="false">
+                                            {{ job.status|capfirst }}
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border border-secondary border-opacity-20 rounded-3">
+                                            <li><h6 class="dropdown-header text-muted small">Change Status</h6></li>
+                                            {% for status_val, status_label in job.JobStatus.choices %}
+                                                <li>
+                                                    <form action="{% url 'job_status_update' job.id %}" method="POST" class="m-0">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="status" value="{{ status_val }}">
+                                                        <button type="submit" class="dropdown-item small {% if job.status == status_val %}active{% endif %}">
+                                                            {{ status_label }}
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                                <td colspan="6" class="p-3 bg-dark bg-opacity-10">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                                        <!-- Slot Allocation (Hired Candidates) -->
+                                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                                            <div class="text-xs text-muted fw-bold text-uppercase tracking-wider">Hired Candidates:</div>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% if job.hired_matches %}
+                                                    {% for match in job.hired_matches %}
+                                                        <div class="d-inline-flex align-items-center gap-2 bg-glass border border-secondary border-opacity-10 rounded-pill px-2.5 py-1 small">
+                                                            <img src="{{ match.student.profile_picture_url|default:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80' }}" class="rounded-circle" style="width: 20px; height: 20px; object-fit: cover;">
+                                                            <span class="text-white">{{ match.student.first_name }} {{ match.student.last_name }}</span>
+                                                            <a href="{% url 'business_matches' %}" class="text-gradient-indigo" title="Chat with Candidate"><i class="bi bi-chat-left-dots-fill ms-1"></i></a>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <span class="text-muted small italic">No candidates hired yet.</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- View Candidates Button (Candidate Discovery) -->
+                                        <div>
+                                            {% if job.status == 'active' %}
+                                                <a href="{% url 'business_applicants' %}?job_id={{ job.id }}" class="btn btn-premium-outline btn-sm rounded-pill py-1 px-3">
+                                                    <i class="bi bi-people-fill"></i> View Candidates 
+                                                    {% if job.applied_candidates_count > 0 %}
+                                                        <span class="badge bg-danger ms-1">{{ job.applied_candidates_count }}</span>
+                                                    {% endif %}
+                                                </a>
+                                            {% else %}
+                                                <a href="{% url 'business_applicants' %}?job_id={{ job.id }}" class="btn btn-outline-secondary btn-sm rounded-pill py-1 px-3" style="opacity: 0.6;">
+                                                    <i class="bi bi-people-fill"></i> View Applicants
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}

@@ -108,7 +108,11 @@ class ApplicantManageView(BusinessRequiredMixin, ListView):
 
     def get_queryset(self):
         profile = get_object_or_404(BusinessProfile, user=self.request.user)
-        return JobApplication.objects.filter(job__business=profile).select_related('student', 'job').order_by('-created_at')
+        queryset = JobApplication.objects.filter(job__business=profile).select_related('student', 'job').order_by('-created_at')
+        job_id = self.request.GET.get('job_id')
+        if job_id:
+            queryset = queryset.filter(job_id=job_id)
+        return queryset
 
 
 class HireActionView(BusinessRequiredMixin, View):
