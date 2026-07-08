@@ -51,6 +51,17 @@
             {% for job in jobs %}
                 <div class="swipe-card {% if forloop.first %}active-card{% else %}background-card{% endif %}" 
                      data-id="{{ job.id }}" 
+                     data-title="{{ job.title }}"
+                     data-company="{{ job.business.company_name }}"
+                     data-company-logo="{{ job.business.company_logo_url|default:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=400&q=80' }}"
+                     data-location="{{ job.location_name }}"
+                     data-pay="${{ job.base_pay }}<small class='fs-6 fw-normal text-muted'>/hr</small>"
+                     data-work-type="{{ job.work_type|capfirst }}"
+                     data-dates="{{ job.start_date }} to {{ job.end_date }}"
+                     data-time="{{ job.shift_start_time }} - {{ job.shift_end_time }}"
+                     data-description="{{ job.description }}"
+                     data-slots="{{ job.slots_available }}"
+                     data-skills="{% for r_skill in job.required_skills.all %}{{ r_skill.skill.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
                      style="{% if not forloop.first %}transform: scale(0.95) translateY(12px); opacity: 0.7; z-index: 1;{% else %}z-index: 2;{% endif %}">
                     
                     <div class="swipe-card-image" style="background-image: url('{{ job.business.company_logo_url|default:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=400&q=80' }}')">
@@ -82,7 +93,7 @@
                         
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fs-4 fw-bold text-gradient-coral">${{ job.base_pay }}<small class="fs-6 fw-normal text-muted">/hr</small></span>
-                            <button class="btn btn-premium-outline btn-sm py-1 px-3">View Details</button>
+                            <button class="btn btn-premium-outline btn-sm py-1 px-3 btn-view-details">View Details</button>
                         </div>
                     </div>
                 </div>
@@ -124,6 +135,65 @@
         <div class="d-flex flex-column gap-3">
             <a href="#" class="btn btn-premium-coral"><i class="bi bi-chat-dots-fill"></i> Open Chat</a>
             <button id="close-swipe-modal" class="btn btn-premium-outline">Keep Swiping</button>
+        </div>
+    </div>
+</div>
+
+<!-- JOB DETAILS MODAL -->
+<div class="modal fade" id="jobDetailsModal" tabindex="-1" aria-labelledby="jobDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark border-secondary border-opacity-20 text-light" style="border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+            <div class="modal-header border-bottom border-secondary border-opacity-10 py-3 px-4">
+                <h5 class="modal-title fs-5 text-white" id="jobDetailsModalLabel">Job Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex flex-column flex-md-row gap-4 align-items-start align-items-md-center mb-4">
+                    <img id="modal-detail-logo" src="" alt="Company Logo" class="rounded-3 border border-secondary border-opacity-10" style="width: 80px; height: 80px; object-fit: cover;">
+                    <div class="flex-grow-1">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                            <h3 class="mb-0 text-white fs-4" id="modal-detail-title"></h3>
+                            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1" id="modal-detail-worktype"></span>
+                        </div>
+                        <h5 class="text-muted fs-6 mb-0" id="modal-detail-company"></h5>
+                    </div>
+                    <div class="text-md-end">
+                        <span class="fs-3 fw-bold text-gradient-coral d-block" id="modal-detail-pay"></span>
+                        <span class="text-muted small" id="modal-detail-slots"></span>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-secondary bg-opacity-10 rounded-3 border border-secondary border-opacity-10">
+                            <h6 class="text-muted small mb-2"><i class="bi bi-geo-alt-fill text-danger"></i> Location</h6>
+                            <p class="text-white mb-0 fw-medium" id="modal-detail-location"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-secondary bg-opacity-10 rounded-3 border border-secondary border-opacity-10">
+                            <h6 class="text-muted small mb-2"><i class="bi bi-clock-fill text-gradient-coral"></i> Shift Timing</h6>
+                            <p class="text-white mb-0 fw-medium" id="modal-detail-timing"></p>
+                            <small class="text-muted d-block mt-1" id="modal-detail-dates"></small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="text-muted small mb-3">Required Skills</h6>
+                    <div class="d-flex flex-wrap gap-2" id="modal-detail-skills">
+                        <!-- Skills dynamically populated -->
+                    </div>
+                </div>
+
+                <div>
+                    <h6 class="text-muted small mb-2">Description</h6>
+                    <p class="text-white-50 mb-0 lh-base" id="modal-detail-description" style="white-space: pre-line;"></p>
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary border-opacity-10 px-4 py-3">
+                <button type="button" class="btn btn-premium-outline py-2 px-4 rounded-pill" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -172,6 +242,7 @@
         }
 
         function triggerSwipe(dir) {
+            if (document.querySelector(".modal.show") || document.querySelector(".match-modal-overlay.show-modal")) return;
             const activeCard = document.querySelector(".active-card");
             const nextCard = document.querySelector(".background-card");
             if (!activeCard) return;
@@ -276,6 +347,7 @@
         }
 
         function startDrag(clientX, clientY) {
+            if (document.querySelector(".modal.show") || document.querySelector(".match-modal-overlay.show-modal")) return;
             isDragging = true;
             startX = clientX;
             startY = clientY;
@@ -350,6 +422,71 @@
             closeSwipeModal.addEventListener("click", () => {
                 matchModal.classList.remove("show-modal");
             });
+        }
+
+        // --- View Details Modal Handlers ---
+        const swiperContainer = document.getElementById("swiper-container");
+        if (swiperContainer) {
+            swiperContainer.addEventListener("click", (e) => {
+                if (e.target.classList.contains("btn-view-details")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const activeCard = document.querySelector(".active-card");
+                    if (activeCard) {
+                        showJobDetails(activeCard);
+                    }
+                }
+            });
+        }
+
+        function showJobDetails(card) {
+            const title = card.getAttribute("data-title");
+            const company = card.getAttribute("data-company");
+            const logo = card.getAttribute("data-company-logo");
+            const location = card.getAttribute("data-location");
+            const pay = card.getAttribute("data-pay");
+            const workType = card.getAttribute("data-work-type");
+            const dates = card.getAttribute("data-dates");
+            const time = card.getAttribute("data-time");
+            const description = card.getAttribute("data-description");
+            const slots = card.getAttribute("data-slots");
+            const skillsStr = card.getAttribute("data-skills") || "";
+
+            document.getElementById("modal-detail-title").innerText = title;
+            document.getElementById("modal-detail-company").innerText = company;
+            document.getElementById("modal-detail-logo").src = logo;
+            document.getElementById("modal-detail-location").innerText = location;
+            document.getElementById("modal-detail-pay").innerHTML = pay;
+            document.getElementById("modal-detail-worktype").innerText = workType;
+            document.getElementById("modal-detail-timing").innerText = time;
+            document.getElementById("modal-detail-dates").innerText = dates;
+            document.getElementById("modal-detail-description").innerText = description;
+            
+            const slotsInt = parseInt(slots) || 1;
+            document.getElementById("modal-detail-slots").innerText = `${slotsInt} slot${slotsInt > 1 ? 's' : ''} available`;
+
+            // Populate skills
+            const skillsContainer = document.getElementById("modal-detail-skills");
+            skillsContainer.innerHTML = "";
+            if (skillsStr.trim()) {
+                const skills = skillsStr.split(",");
+                skills.forEach(skill => {
+                    const cleanSkill = skill.trim();
+                    if (cleanSkill) {
+                        const badge = document.createElement("span");
+                        badge.className = "badge bg-glass border border-secondary border-opacity-10 text-white-50 px-2.5 py-1.5 fs-6";
+                        badge.innerText = cleanSkill;
+                        skillsContainer.appendChild(badge);
+                    }
+                });
+            } else {
+                skillsContainer.innerHTML = '<span class="text-muted small">No specific skills listed</span>';
+            }
+
+            // Show Bootstrap modal
+            const modalEl = document.getElementById('jobDetailsModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
         }
     });
 </script>

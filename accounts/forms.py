@@ -20,13 +20,21 @@ class LoginForm(forms.Form):
         password = cleaned_data.get('password')
 
         if email and password:
-            user = authenticate(username=email, password=password)
+            try:
+                user = User.objects.get(email=email)
+                if user.check_password(password):
+                    if user.role == User.Role.BUSINESS and user.status != User.AccountStatus.APPROVED:
+                        raise forms.ValidationError(_("Your business account is currently under review. An administrator must approve your registration before you can access your dashboard."))
+                    if not user.is_active:
+                        raise forms.ValidationError(_("This account is currently inactive."))
+                    user = authenticate(username=email, password=password)
+                else:
+                    user = None
+            except User.DoesNotExist:
+                user = None
+
             if not user:
                 raise forms.ValidationError(_("Invalid email or password."))
-            if not user.is_active:
-                raise forms.ValidationError(_("This account is currently inactive."))
-            if user.role == User.Role.BUSINESS and user.status != User.AccountStatus.APPROVED:
-                raise forms.ValidationError(_("Your business account is currently under review. An administrator must approve your registration before you can access your dashboard."))
             cleaned_data['user'] = user
         return cleaned_data
 

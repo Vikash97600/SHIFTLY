@@ -12,12 +12,22 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
-        user = authenticate(username=email, password=password)
+
+        try:
+            user = User.objects.get(email=email)
+            if user.check_password(password):
+                if user.role == User.Role.BUSINESS and user.status != User.AccountStatus.APPROVED:
+                    raise serializers.ValidationError({"detail": "Your business account is currently under review."})
+                if not user.is_active:
+                    raise serializers.ValidationError({"detail": "This account is currently inactive."})
+                user = authenticate(username=email, password=password)
+            else:
+                user = None
+        except User.DoesNotExist:
+            user = None
 
         if user is None:
             raise serializers.ValidationError({"detail": "No active account found with the given credentials"})
-        if user.role == User.Role.BUSINESS and user.status != User.AccountStatus.APPROVED:
-            raise serializers.ValidationError({"detail": "Your business account is currently under review."})
 
         self.user = user
         data = super().validate(attrs)
