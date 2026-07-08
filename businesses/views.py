@@ -35,8 +35,8 @@ class BusinessRequiredMixin(LoginRequiredMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
-        if request.user.role != 'business':
-            raise PermissionDenied("Only businesses can access this area.")
+        if request.user.role != 'business' or not request.user.is_active or request.user.status != User.AccountStatus.APPROVED:
+            raise PermissionDenied("Only approved businesses can access this area.")
         return super().dispatch(request, *args, **kwargs)
 
 

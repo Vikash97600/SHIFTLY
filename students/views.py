@@ -12,6 +12,7 @@ from django.urls import reverse_lazy
 from rest_framework import generics as drf_generics
 from rest_framework.permissions import IsAuthenticated
 from accounts.permissions import IsStudent
+from django.contrib.auth import get_user_model
 from .serializers import StudentProfileSerializer
 
 from .models import StudentProfile, StudentSkill, Skill
@@ -22,6 +23,8 @@ from matches.models import Match, JobApplication
 from businesses.models import Earning
 from notifications.models import Notification
 
+User = get_user_model()
+
 class StudentRequiredMixin(LoginRequiredMixin):
     """
     Mixin that ensures the user is logged in and possesses the 'student' role.
@@ -29,8 +32,8 @@ class StudentRequiredMixin(LoginRequiredMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
-        if request.user.role != 'student':
-            raise PermissionDenied("Only students can access this area.")
+        if request.user.role != 'student' or not request.user.is_active or request.user.status != User.AccountStatus.APPROVED:
+            raise PermissionDenied("Only approved students can access this area.")
         return super().dispatch(request, *args, **kwargs)
 
 

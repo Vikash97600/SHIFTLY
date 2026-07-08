@@ -21,7 +21,9 @@ class BusinessModuleTests(TestCase):
         self.business_user = User.objects.create_user(
             email="employer@shiftly.com",
             password="password123",
-            role="business"
+            role="business",
+            status=User.AccountStatus.APPROVED,
+            is_active=True
         )
         self.business_profile = BusinessProfile.objects.create(
             user=self.business_user,

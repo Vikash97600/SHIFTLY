@@ -1,14 +1,25 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.db import transaction
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from students.models import StudentProfile
 from businesses.models import BusinessProfile
+from .utils import create_business_registration_notifications
 
 User = get_user_model()
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        user = authenticate(username=email, password=password)
+
+        if user is None:
+            raise serializers.ValidationError({"detail": "No active account found with the given credentials"})
+        if user.role == User.Role.BUSINESS and user.status != User.AccountStatus.APPROVED:
+            raise serializers.ValidationError({"detail": "Your business account is currently under review."})
+
+        self.user = user
         data = super().validate(attrs)
         data['role'] = self.user.role
         data['email'] = self.user.email
@@ -34,6 +45,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         role = attrs.get('role')
+        if role == User.Role.ADMIN:
+            raise serializers.ValidationError({"role": "Admin registration is not allowed publicly."})
         if role == User.Role.STUDENT:
             if not attrs.get('first_name') or not attrs.get('last_name'):
                 raise serializers.ValidationError({"first_name": "Required for student registration"})
@@ -52,7 +65,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=email,
             password=password,
             role=role,
-            is_active=True
+            is_active=role != User.Role.BUSINESS,
+            status=User.AccountStatus.PENDING if role == User.Role.BUSINESS else User.AccountStatus.APPROVED,
+            is_verified=role != User.Role.BUSINESS,
         )
 
         # Scaffolding profile records based on registered role
@@ -63,12 +78,13 @@ class RegisterSerializer(serializers.ModelSerializer):
                 last_name=validated_data.get('last_name', '')
             )
         elif role == User.Role.BUSINESS:
-            BusinessProfile.objects.create(
+            business_profile = BusinessProfile.objects.create(
                 user=user,
                 company_name=validated_data.get('company_name', ''),
                 industry='Not Specified',
                 business_registration_no=f"REG-{user.uuid.hex[:8].upper()}"
             )
+            create_business_registration_notifications(user, business_profile)
 
         return user
 

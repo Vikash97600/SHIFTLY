@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from students.models import StudentProfile
 from businesses.models import BusinessProfile
+from notifications.models import Notification
 
 User = get_user_model()
 
@@ -70,6 +71,37 @@ class AuthenticationTests(APITestCase):
         response = self.client.post(self.register_url, invalid_student, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_admin_registration_is_blocked(self):
+        """
+        Public registration must never create an admin user.
+        """
+        response = self.client.post(self.register_url, {
+            "email": "admin@shiftly.com",
+            "password": "strongpassword123",
+            "role": "admin"
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(email="admin@shiftly.com").exists())
+
+    def test_pending_business_cannot_login(self):
+        """
+        Business accounts should stay pending until an admin approves them.
+        """
+        self.client.post(self.register_url, self.business_data, format='json')
+        business_user = User.objects.get(email=self.business_data['email'])
+
+        self.assertEqual(business_user.status, User.AccountStatus.PENDING)
+        self.assertFalse(business_user.is_active)
+
+        login_response = self.client.post(self.login_url, {
+            "email": self.business_data['email'],
+            "password": self.business_data['password']
+        }, format='json')
+
+        self.assertEqual(login_response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertTrue(Notification.objects.filter(user=business_user).exists())
+
     def test_login_and_jwt_payload(self):
         """
         Verify login generates tokens and returns proper custom user payload attributes.
@@ -104,7 +136,12 @@ class AuthenticationTests(APITestCase):
         }, format='json')
         student_token = student_login.data['access']
 
-        # Login business
+        # Approve the business user before allowing login
+        business_user = User.objects.get(email=self.business_data['email'])
+        business_user.status = User.AccountStatus.APPROVED
+        business_user.is_active = True
+        business_user.save(update_fields=['status', 'is_active'])
+
         business_login = self.client.post(self.login_url, {
             "email": self.business_data['email'],
             "password": self.business_data['password']
@@ -191,14 +228,16 @@ class HTMLAuthenticationTests(TestCase):
             "confirm_password": "strongpassword123"
         }
         response = self.client.post(reverse('register_page'), post_data)
-        # Check redirection to business dashboard
-        self.assertRedirects(response, reverse('business_dashboard'))
+        # Pending businesses should be redirected to login after submission
+        self.assertRedirects(response, reverse('login_page'))
         
         # Check user and business profile creation
         user = self.user_model.objects.get(email="testbusiness@shiftly.com")
         self.assertEqual(user.role, "business")
         self.assertTrue(BusinessProfile.objects.filter(user=user).exists())
         self.assertEqual(user.business_profile.company_name, "Red Coffee Corp")
+        self.assertEqual(user.status, self.user_model.AccountStatus.PENDING)
+        self.assertFalse(user.is_active)
 
     def test_html_login_redirect_student(self):
         # Create user first
@@ -218,11 +257,13 @@ class HTMLAuthenticationTests(TestCase):
         self.assertRedirects(response, reverse('student_dashboard'))
 
     def test_html_login_redirect_business(self):
-        # Create user first
+        # Create an approved business user first
         user = self.user_model.objects.create_user(
             email="redcoffee@shiftly.com",
             password="strongpassword123",
-            role="business"
+            role="business",
+            status=self.user_model.AccountStatus.APPROVED,
+            is_active=True
         )
         BusinessProfile.objects.create(user=user, company_name="Red Coffee")
 

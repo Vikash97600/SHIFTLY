@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     AdminDashboardView, AdminUsersView, AdminBusinessesView, AdminJobsView,
     AdminVerificationsView, AdminReportsView, AdminToggleUserActiveView,
-    AdminVerifyRequestActionView, AdminJobModerationActionView, AdminReportResolveActionView
+    AdminVerifyRequestActionView, AdminJobModerationActionView, AdminReportResolveActionView,
+    AdminBusinessApprovalActionView
 )
 
 urlpatterns = [
@@ -16,6 +17,7 @@ urlpatterns = [
     # AJAX Moderation Actions
     path('users/toggle/<int:user_id>/', AdminToggleUserActiveView.as_view(), name='admin_toggle_user'),
     path('verifications/action/<int:request_id>/', AdminVerifyRequestActionView.as_view(), name='admin_verification_action'),
+    path('businesses/action/<int:business_id>/', AdminBusinessApprovalActionView.as_view(), name='admin_business_approval_action'),
     path('jobs/action/<int:job_id>/', AdminJobModerationActionView.as_view(), name='admin_job_action'),
     path('reports/action/<int:report_id>/', AdminReportResolveActionView.as_view(), name='admin_report_action'),
 ]

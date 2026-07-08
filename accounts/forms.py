@@ -25,6 +25,8 @@ class LoginForm(forms.Form):
                 raise forms.ValidationError(_("Invalid email or password."))
             if not user.is_active:
                 raise forms.ValidationError(_("This account is currently inactive."))
+            if user.role == User.Role.BUSINESS and user.status != User.AccountStatus.APPROVED:
+                raise forms.ValidationError(_("Your business account is currently under review. An administrator must approve your registration before you can access your dashboard."))
             cleaned_data['user'] = user
         return cleaned_data
 
@@ -73,6 +75,9 @@ class RegisterForm(forms.ModelForm):
 
         if password != confirm_password:
             raise forms.ValidationError(_("Passwords do not match."))
+
+        if role == User.Role.ADMIN:
+            raise forms.ValidationError(_("Admin registration is not allowed publicly."))
 
         if role == User.Role.STUDENT:
             if not cleaned_data.get('first_name') or not cleaned_data.get('last_name'):

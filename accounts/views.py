@@ -1,4 +1,5 @@
 from rest_framework import status, generics, permissions
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -20,6 +21,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     JWT Login View returning access token, refresh token, and user metadata.
     """
     serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as exc:
+            raise AuthenticationFailed("Invalid email or password") from exc
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -103,6 +112,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.db import transaction
+from django.contrib.auth import get_user_model
 
 from .forms import LoginForm, RegisterForm, ContactForm
 from students.models import StudentProfile
@@ -165,8 +175,9 @@ class RegisterPageView(View):
                 return redirect('student_dashboard')
             elif request.user.role == 'business':
                 return redirect('business_dashboard')
-        # Prepopulate role from GET parameter if provided
         initial_role = request.GET.get('role', 'student')
+        if initial_role not in {User.Role.STUDENT, User.Role.BUSINESS}:
+            initial_role = User.Role.STUDENT
         form = RegisterForm(initial={'role': initial_role})
         return render(request, self.template_name, {'form': form})
 
@@ -174,12 +185,18 @@ class RegisterPageView(View):
         form = RegisterForm(request.POST)
         if form.is_valid():
             with transaction.atomic():
+                role = form.cleaned_data.get('role')
+                if role == User.Role.ADMIN:
+                    form.add_error('role', 'Admin registration is not allowed publicly.')
+                    return render(request, self.template_name, {'form': form})
+
                 user = form.save(commit=False)
                 user.set_password(form.cleaned_data['password'])
-                user.is_active = True
+                user.is_active = role != User.Role.BUSINESS
+                user.status = User.AccountStatus.PENDING if role == User.Role.BUSINESS else User.AccountStatus.APPROVED
+                user.is_verified = role != User.Role.BUSINESS
                 user.save()
 
-                role = form.cleaned_data.get('role')
                 if role == User.Role.STUDENT:
                     StudentProfile.objects.create(
                         user=user,
@@ -187,21 +204,22 @@ class RegisterPageView(View):
                         last_name=form.cleaned_data.get('last_name', '')
                     )
                 elif role == User.Role.BUSINESS:
-                    BusinessProfile.objects.create(
+                    business_profile = BusinessProfile.objects.create(
                         user=user,
                         company_name=form.cleaned_data.get('company_name', ''),
                         industry='Not Specified',
                         business_registration_no=f"REG-{user.uuid.hex[:8].upper()}"
                     )
+                    from .utils import create_business_registration_notifications
+                    create_business_registration_notifications(user, business_profile)
 
-                # Log user in immediately on registration
-                auth_login(request, user)
-                messages.success(request, "Account created successfully!")
-                
                 if role == User.Role.STUDENT:
+                    auth_login(request, user)
+                    messages.success(request, "Account created successfully!")
                     return redirect('student_dashboard')
                 elif role == User.Role.BUSINESS:
-                    return redirect('business_dashboard')
+                    messages.success(request, "Your business account has been submitted for approval.")
+                    return redirect('login_page')
 
         return render(request, self.template_name, {'form': form})
 

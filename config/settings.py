@@ -99,26 +99,29 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 import sys
 
-# Support SQLite fallback if MySQL is not available or if SHIFTLY_DEV_SQLITE=True
-USE_SQLITE = os.environ.get("SHIFTLY_DEV_SQLITE", "False").lower() in ("true", "1", "yes")
+# Default to SQLite for local development unless explicit MySQL configuration is supplied.
+USE_SQLITE = os.environ.get("SHIFTLY_DEV_SQLITE", "True").lower() in ("true", "1", "yes")
+MYSQL_CONFIGURED = any(
+    os.environ.get(var)
+    for var in ("SHIFTLY_DB_HOST", "SHIFTLY_DB_PORT", "SHIFTLY_DB_USER", "SHIFTLY_DB_PASSWORD", "SHIFTLY_DB_NAME")
+)
 
-if not USE_SQLITE and 'test' not in sys.argv:
+if not USE_SQLITE and MYSQL_CONFIGURED and 'test' not in sys.argv:
     try:
         import pymysql
-        # Perform dry run check to see if database is reachable
         mysql_host = os.environ.get("SHIFTLY_DB_HOST", "127.0.0.1")
         mysql_port = int(os.environ.get("SHIFTLY_DB_PORT", "3306"))
         mysql_user = os.environ.get("SHIFTLY_DB_USER", "root")
         mysql_password = os.environ.get("SHIFTLY_DB_PASSWORD", "")
         mysql_db = os.environ.get("SHIFTLY_DB_NAME", "shiftly")
-        
+
         conn = pymysql.connect(
             host=mysql_host,
             port=mysql_port,
             user=mysql_user,
             password=mysql_password,
             database=mysql_db,
-            connect_timeout=1
+            connect_timeout=1,
         )
         conn.close()
     except Exception as e:

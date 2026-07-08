@@ -63,7 +63,9 @@ class StudentViewsTests(TestCase):
         self.business_user = User.objects.create_user(
             email="business@shiftly.com",
             password="password123",
-            role="business"
+            role="business",
+            status=User.AccountStatus.APPROVED,
+            is_active=True
         )
         self.business_profile = BusinessProfile.objects.create(
             user=self.business_user,

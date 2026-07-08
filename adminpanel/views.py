@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 
 from accounts.models import Verification, ReputationLog
+from accounts.utils import create_account_decision_notification
 from businesses.models import BusinessProfile, Earning
 from students.models import StudentProfile
 from jobs.models import JobPosting
@@ -76,6 +77,8 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
         total_apps = JobApplication.objects.count()
         filled_shifts = JobPosting.objects.filter(status='filled').count()
 
+        pending_businesses = BusinessProfile.objects.filter(user__status='pending').select_related('user').order_by('-created_at')
+
         context.update({
             # KPIs
             'total_users': total_users,
@@ -97,6 +100,7 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
 
             # Audit Logs
             'recent_logs': AuditLog.objects.select_related('actor').order_by('-created_at')[:8],
+            'pending_businesses': pending_businesses,
         })
         return context
 
@@ -121,6 +125,42 @@ class AdminBusinessesView(AdminRequiredMixin, ListView):
 
     def get_queryset(self):
         return BusinessProfile.objects.select_related('user').order_by('-created_at')
+
+
+class AdminBusinessApprovalActionView(AdminRequiredMixin, View):
+    def post(self, request, business_id):
+        profile = get_object_or_404(BusinessProfile, id=business_id)
+        action = request.POST.get('action')
+        reason = request.POST.get('reason', '').strip()
+
+        if action not in ['approve', 'reject']:
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+
+        user = profile.user
+        if action == 'approve':
+            user.status = User.AccountStatus.APPROVED
+            user.is_active = True
+            user.is_verified = True
+            user.approved_by = request.user
+            user.approved_at = timezone.now()
+            user.save(update_fields=['status', 'is_active', 'is_verified', 'approved_by', 'approved_at', 'updated_at'])
+            create_account_decision_notification(user, True)
+        else:
+            user.status = User.AccountStatus.REJECTED
+            user.is_active = False
+            user.is_verified = False
+            user.save(update_fields=['status', 'is_active', 'is_verified', 'updated_at'])
+            create_account_decision_notification(user, False, reason)
+
+        AuditLog.objects.create(
+            actor=request.user,
+            action=f'business_{action}',
+            target_table='businesses_businessprofile',
+            target_id=profile.id,
+            details={'business': profile.company_name, 'reason': reason},
+        )
+
+        return JsonResponse({'success': True, 'status': user.status})
 
 
 class AdminJobsView(AdminRequiredMixin, ListView):
