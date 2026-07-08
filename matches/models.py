@@ -31,6 +31,7 @@ class JobApplication(models.Model):
         ACCEPTED = 'accepted', 'Accepted'
         REJECTED = 'rejected', 'Rejected'
         WITHDRAWN = 'withdrawn', 'Withdrawn'
+        CLOSED = 'closed', 'Closed'
 
     match = models.OneToOneField(Match, on_delete=models.SET_NULL, null=True, blank=True, related_name='application')
     student = models.ForeignKey(StudentProfile, on_delete=models.RESTRICT, related_name='applications')

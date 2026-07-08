@@ -172,3 +172,7 @@ class BusinessModuleTests(TestCase):
         # Verify student reputation score updated (5.0 rating * 20 = 100 reputation score)
         self.student_profile.refresh_from_db()
         self.assertEqual(self.student_profile.reputation_score, Decimal('100.00'))
+
+        # Verify application status closed
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, 'closed')

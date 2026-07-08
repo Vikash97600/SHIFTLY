@@ -245,6 +245,10 @@ class SubmitRatingView(BusinessRequiredMixin, View):
                     earning.payment_status = 'released'
                     earning.save()
 
+                # Update application status to closed
+                application.status = 'closed'
+                application.save()
+
                 messages.success(request, f"Review submitted. Payout released to {student.first_name}!")
                 return redirect('business_applicants')
 

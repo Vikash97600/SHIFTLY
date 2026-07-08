@@ -47,7 +47,7 @@ class StudentDashboardView(StudentRequiredMixin, TemplateView):
         # Calculate stats
         completed_shifts = Earning.objects.filter(student=profile, payment_status='released').count()
         total_earnings = sum(e.net_amount for e in Earning.objects.filter(student=profile, payment_status='released'))
-        active_apps = JobApplication.objects.filter(student=profile).exclude(status__in=['accepted', 'rejected', 'withdrawn']).count()
+        active_apps = JobApplication.objects.filter(student=profile).exclude(status__in=['accepted', 'closed', 'rejected', 'withdrawn']).count()
         matches_count = Match.objects.filter(student=profile, status__in=['active', 'hired']).count()
 
         # Recommended Jobs (Active job postings that the student hasn't swiped on yet)
