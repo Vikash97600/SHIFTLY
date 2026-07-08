@@ -113,6 +113,30 @@ class ChatEngineTests(TransactionTestCase):
         self.assertTrue(connected)
         await communicator.disconnect()
 
+    async def test_websocket_connect_with_jwt_token(self):
+        """
+        Verify that we can connect to the ASGI application using a JWT token in the query string.
+        """
+        from config.asgi import application
+        from rest_framework_simplejwt.tokens import AccessToken
+        token = str(AccessToken.for_user(self.student_user))
+
+        communicator = WebsocketCommunicator(application, f"/ws/chat/{self.room.uuid}/?token={token}")
+        connected, subprotocol = await communicator.connect()
+        self.assertTrue(connected)
+        await communicator.disconnect()
+
+    async def test_websocket_connect_with_session_user(self):
+        """
+        Verify that a user authenticated via session can connect without token.
+        """
+        from config.asgi import application
+        communicator = WebsocketCommunicator(application, f"/ws/chat/{self.room.uuid}/")
+        communicator.scope['user'] = self.student_user
+        connected, subprotocol = await communicator.connect()
+        self.assertTrue(connected)
+        await communicator.disconnect()
+
     async def test_websocket_connect_anonymous_rejected(self):
         """
         Verify that an unauthenticated user connection is rejected (4003).
