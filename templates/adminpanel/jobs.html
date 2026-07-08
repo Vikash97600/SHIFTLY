@@ -32,7 +32,7 @@
                                     <small class="text-muted"><i class="bi bi-geo-alt-fill text-danger text-xs"></i> {{ job.location_name }}</small>
                                 </td>
                                 <td class="text-white">{{ job.business.company_name }}</td>
-                                <td><span class="text-success fw-bold">${{ job.base_pay }}/hr</span></td>
+                                <td><span class="text-success fw-bold">₹{{ job.base_pay }}/hr</span></td>
                                 <td class="text-muted">{{ job.start_date }}</td>
                                 <td class="text-muted">{{ job.slots_filled }} / {{ job.slots_available }}</td>
                                 <td id="job-status-{{ job.id }}">

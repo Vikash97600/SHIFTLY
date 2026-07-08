@@ -301,3 +301,92 @@ class AdminReportResolveActionView(AdminRequiredMixin, View):
         )
 
         return JsonResponse({'success': True, 'status': report.status})
+
+
+from django.db.models import Avg
+from ratings.models import (
+    StudentReputation, StudentReputationHistory,
+    BusinessReputation, BusinessReputationHistory
+)
+from ratings.services import recalculate_student_reputation, recalculate_business_reputation
+
+class AdminReputationView(AdminRequiredMixin, TemplateView):
+    template_name = 'adminpanel/reputation.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # 1. KPIs
+        avg_student_score = StudentProfile.objects.aggregate(avg=Avg('reputation_score'))['avg'] or 100.0
+        avg_business_score = BusinessProfile.objects.aggregate(avg=Avg('reputation_score'))['avg'] or 100.0
+        suspicious_student_count = StudentProfile.objects.filter(reputation_score__lt=60).count()
+        suspicious_business_count = BusinessProfile.objects.filter(reputation_score__lt=60).count()
+        
+        # 2. Top & Bottom Lists
+        highest_students = StudentProfile.objects.select_related('reputation').order_by('-reputation_score')[:5]
+        lowest_students = StudentProfile.objects.select_related('reputation').order_by('reputation_score')[:5]
+        highest_businesses = BusinessProfile.objects.select_related('reputation').order_by('-reputation_score')[:5]
+        lowest_businesses = BusinessProfile.objects.select_related('reputation').order_by('reputation_score')[:5]
+        
+        # 3. Suspicious Accounts
+        suspicious_students = StudentProfile.objects.filter(reputation_score__lt=60).select_related('reputation')
+        suspicious_businesses = BusinessProfile.objects.filter(reputation_score__lt=60).select_related('reputation')
+        
+        # 4. History Logs
+        student_history = StudentReputationHistory.objects.select_related('student').order_by('-created_at')[:15]
+        business_history = BusinessReputationHistory.objects.select_related('business').order_by('-created_at')[:15]
+
+        # 5. Load all users (for recalculation searchable selector)
+        all_students = StudentProfile.objects.all().order_by('first_name')
+        all_businesses = BusinessProfile.objects.all().order_by('company_name')
+
+        context.update({
+            'avg_student_score': avg_student_score,
+            'avg_business_score': avg_business_score,
+            'suspicious_count': suspicious_student_count + suspicious_business_count,
+            'highest_students': highest_students,
+            'lowest_students': lowest_students,
+            'highest_businesses': highest_businesses,
+            'lowest_businesses': lowest_businesses,
+            'suspicious_students': suspicious_students,
+            'suspicious_businesses': suspicious_businesses,
+            'student_history': student_history,
+            'business_history': business_history,
+            'all_students': all_students,
+            'all_businesses': all_businesses,
+        })
+        return context
+
+
+class AdminRecalculateReputationActionView(AdminRequiredMixin, View):
+    """
+    POST View to trigger manual audit recalculation on a student or business owner's profile.
+    """
+    def post(self, request, *args, **kwargs):
+        target_type = request.POST.get('target_type') # student or business
+        target_id = request.POST.get('target_id')
+        
+        if not target_id:
+            return JsonResponse({'error': 'Missing target ID'}, status=400)
+
+        if target_type == 'student':
+            profile = get_object_or_404(StudentProfile, id=target_id)
+            recalculate_student_reputation(profile, reason=f"Manual Admin Recalculation by {request.user.email}")
+            new_score = profile.reputation_score
+        elif target_type == 'business':
+            profile = get_object_or_404(BusinessProfile, id=target_id)
+            recalculate_business_reputation(profile, reason=f"Manual Admin Recalculation by {request.user.email}")
+            new_score = profile.reputation_score
+        else:
+            return JsonResponse({'error': 'Invalid target type'}, status=400)
+
+        # Audit Log
+        AuditLog.objects.create(
+            actor=request.user,
+            action='manual_recalculation',
+            target_table='ratings_studentreputation' if target_type == 'student' else 'ratings_businessreputation',
+            target_id=profile.id,
+            details={'target_email': profile.user.email, 'new_score': float(new_score)}
+        )
+
+        return JsonResponse({'success': True, 'new_score': float(new_score)})

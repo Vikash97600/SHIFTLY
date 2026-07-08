@@ -108,6 +108,9 @@
                 <a href="{% url 'admin_reports' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_reports' %}active{% endif %}">
                     <i class="bi bi-flag"></i> Flagged Reports
                 </a>
+                <a href="{% url 'admin_reputation' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_reputation' %}active{% endif %}">
+                    <i class="bi bi-shield-check"></i> Reputation System
+                </a>
             </nav>
         </div>
 

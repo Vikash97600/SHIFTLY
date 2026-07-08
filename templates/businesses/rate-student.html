@@ -24,7 +24,7 @@
                     </div>
                     <div class="text-end">
                         <small class="text-muted d-block">HOURLY WAGE</small>
-                        <span class="text-gradient-coral fw-bold fs-5">${{ application.job.base_pay }}/hr</span>
+                        <span class="text-gradient-coral fw-bold fs-5">₹{{ application.job.base_pay }}/hr</span>
                     </div>
                 </div>
 
@@ -32,8 +32,50 @@
                     {% csrf_token %}
                     
                     <div class="row g-4">
-                        <div class="col-12">
-                            <label class="form-label text-muted">Evaluation Rating (1.0 to 5.0 Stars)</label>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Attendance Status</label>
+                            {{ form.attendance }}
+                            {{ form.attendance.errors }}
+                        </div>
+                        <div class="col-md-6" id="punctuality-field-wrapper">
+                            <label class="form-label text-muted">Punctuality</label>
+                            {{ form.punctuality }}
+                            {{ form.punctuality.errors }}
+                        </div>
+
+                        <div class="col-12 border-top border-secondary border-opacity-10 pt-4 mt-4" id="behavior-section">
+                            <h5 class="text-white mb-3">Professional Behaviour (1 to 5 Stars)</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small">Communication</label>
+                                    {{ form.communication }}
+                                    {{ form.communication.errors }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small">Behavior & Attitude</label>
+                                    {{ form.behaviour }}
+                                    {{ form.behaviour.errors }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted small">Teamwork</label>
+                                    {{ form.teamwork }}
+                                    {{ form.teamwork.errors }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Work Quality</label>
+                                    {{ form.work_quality }}
+                                    {{ form.work_quality.errors }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Professionalism</label>
+                                    {{ form.professionalism }}
+                                    {{ form.professionalism.errors }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 border-top border-secondary border-opacity-10 pt-4 mt-4">
+                            <label class="form-label text-muted">Overall Evaluation Rating (1.0 to 5.0 Stars)</label>
                             {{ form.rating }}
                             {{ form.rating.errors }}
                         </div>
@@ -54,4 +96,33 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const attendanceSelect = document.querySelector("[name=attendance]");
+        const punctWrapper = document.getElementById("punctuality-field-wrapper");
+        const behaviorSection = document.getElementById("behavior-section");
+        const ratingInput = document.querySelector("[name=rating]");
+        
+        function toggleAttendanceFields() {
+            if (attendanceSelect.value === 'absent') {
+                punctWrapper.style.opacity = '0.4';
+                punctWrapper.querySelector('select').disabled = true;
+                behaviorSection.style.opacity = '0.4';
+                behaviorSection.querySelectorAll('input').forEach(i => i.disabled = true);
+                ratingInput.value = '1.0';
+            } else {
+                punctWrapper.style.opacity = '1';
+                punctWrapper.querySelector('select').disabled = false;
+                behaviorSection.style.opacity = '1';
+                behaviorSection.querySelectorAll('input').forEach(i => i.disabled = false);
+            }
+        }
+        
+        attendanceSelect.addEventListener("change", toggleAttendanceFields);
+        toggleAttendanceFields();
+    });
+</script>
 {% endblock %}

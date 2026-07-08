@@ -40,14 +40,27 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="text-success fw-bold"><i class="bi bi-shield-fill-check"></i> {{ app.student.reputation_score }}</span>
+                                    <div class="d-flex flex-column align-items-start gap-1">
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <span class="text-success fw-bold"><i class="bi bi-shield-fill-check"></i> {{ app.student_reputation.reputation_score }}</span>
+                                            <span class="text-gradient-coral fw-semibold small" style="font-size: 0.75rem;">{{ app.student_reputation.trust_badge }}</span>
+                                        </div>
+                                        <div class="text-muted small" style="font-size: 0.7rem; line-height: 1.2;">
+                                            <span>Attendance: {{ app.student_reputation.attendance_rate }}%</span><br>
+                                            <span>Jobs Completed: {{ app.student_reputation.student.matches.count }}</span><br>
+                                            <span>Rating: <i class="bi bi-star-fill text-warning" style="font-size: 0.65rem;"></i> {{ app.student_reputation.average_rating }}</span><br>
+                                            {% if app.distance < 99999 %}
+                                                <span class="text-info"><i class="bi bi-geo-alt-fill"></i> {{ app.distance|floatformat:1 }} km away</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="text-white">{{ app.job.title }}</div>
                                     <small class="text-muted">{{ app.job.start_date }}</small>
                                 </td>
                                 <td>
-                                    <span class="text-white">${{ app.job.base_pay }}/hr</span>
+                                    <span class="text-white">₹{{ app.job.base_pay }}/hr</span>
                                 </td>
                                 <td id="app-status-{{ app.id }}">
                                     <span class="badge 
@@ -129,7 +142,7 @@
                         alertDiv.className = "alert alert-success alert-dismissible fade show bg-glass text-light border border-opacity-10 mb-4";
                         alertDiv.role = "alert";
                         alertDiv.innerHTML = `
-                            <strong>Success!</strong> Candidate hired. Payout of $${data.net_payout.toFixed(2)} locked in platform escrow.
+                            <strong>Success!</strong> Candidate hired. Payout of ₹${data.net_payout.toFixed(2)} locked in platform escrow.
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
                         `;
                         document.querySelector("main").prepend(alertDiv);

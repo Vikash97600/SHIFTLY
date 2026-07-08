@@ -1,0 +1,83 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Rate Employer - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5">
+        <h1 class="text-white mb-1">Rate Employer</h1>
+        <p class="text-muted mb-0">Evaluate payment timeliness, environment, and job listing accuracy to complete the trust loop.</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="dash-card p-4">
+                <div class="p-3 bg-glass border border-secondary border-opacity-10 rounded-4 d-flex justify-content-between align-items-center mb-5">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle p-0.5 bg-glass border border-secondary border-opacity-10" style="width: 50px; height: 50px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            <img src="{{ match.job.business.company_logo_url|default:'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=150&q=80' }}" class="img-fluid rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div>
+                            <h6 class="text-white mb-0">{{ match.job.business.company_name }}</h6>
+                            <small class="text-muted">Completed Shift: {{ match.job.title }}</small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted d-block">HOURLY WAGE</small>
+                        <span class="text-gradient-coral fw-bold fs-5">₹{{ match.job.base_pay }}/hr</span>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h5 class="text-white mb-3">Rate Granular Categories (1 to 5 Stars)</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Payment Timeliness</label>
+                                    {{ form.payment_timeliness }}
+                                    {{ form.payment_timeliness.errors }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Job Description Accuracy</label>
+                                    {{ form.job_accuracy }}
+                                    {{ form.job_accuracy.errors }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Workplace Environment</label>
+                                    {{ form.work_environment }}
+                                    {{ form.work_environment.errors }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Communication</label>
+                                    {{ form.communication }}
+                                    {{ form.communication.errors }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 border-top border-secondary border-opacity-10 pt-4 mt-4">
+                            <label class="form-label text-muted">Overall Evaluation Rating (1.0 to 5.0 Stars)</label>
+                            {{ form.rating }}
+                            {{ form.rating.errors }}
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label text-muted">Feedback Summary</label>
+                            {{ form.feedback_text }}
+                            {{ form.feedback_text.errors }}
+                        </div>
+                    </div>
+
+                    <div class="mt-5 d-flex justify-content-between align-items-center">
+                        <div class="small text-muted"><i class="bi bi-info-circle text-primary"></i> Submitting this review updates the business owner's reputation score.</div>
+                        <button type="submit" class="btn btn-premium-coral px-4 py-2.5"><i class="bi bi-star-fill text-warning"></i> Submit Evaluation</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

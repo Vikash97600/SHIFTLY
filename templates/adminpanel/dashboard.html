@@ -16,7 +16,7 @@
             <div class="dash-card p-4 h-100 d-flex flex-column justify-content-between">
                 <div>
                     <small class="text-muted d-block mb-1">PLATFORM REVENUE</small>
-                    <h3 class="text-white fw-bold mb-0">${{ total_revenue|floatformat:2 }}</h3>
+                    <h3 class="text-white fw-bold mb-0">₹{{ total_revenue|floatformat:2 }}</h3>
                 </div>
                 <div class="d-flex align-items-center justify-content-between mt-3">
                     <span class="text-xs text-success"><i class="bi bi-arrow-up-right"></i> 10% fee</span>
@@ -87,7 +87,7 @@
         <!-- Revenue Trends Chart -->
         <div class="col-lg-8">
             <div class="dash-card p-4">
-                <h5 class="text-white mb-4"><i class="bi bi-graph-up-arrow text-success"></i> Platform Revenue Growth (USD)</h5>
+                <h5 class="text-white mb-4"><i class="bi bi-graph-up-arrow text-success"></i> Platform Revenue Growth (INR)</h5>
                 <div style="height: 300px; position: relative;">
                     <canvas id="revenueChart"></canvas>
                 </div>

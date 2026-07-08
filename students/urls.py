@@ -8,7 +8,8 @@ from .views import (
     ApplicationsListView,
     EarningsListView,
     NotificationsListView,
-    MarkNotificationsReadView
+    MarkNotificationsReadView,
+    SubmitBusinessRatingView
 )
 
 urlpatterns = [
@@ -19,6 +20,7 @@ urlpatterns = [
     path('swipe/action/', SwipeActionView.as_view(), name='student_swipe_action'),
     path('applications/', ApplicationsListView.as_view(), name='student_applications'),
     path('earnings/', EarningsListView.as_view(), name='student_earnings'),
+    path('rate/<int:match_id>/', SubmitBusinessRatingView.as_view(), name='student_rate_business'),
     path('notifications/', NotificationsListView.as_view(), name='student_notifications'),
     path('notifications/read/', MarkNotificationsReadView.as_view(), name='student_notifications_read'),
 ]

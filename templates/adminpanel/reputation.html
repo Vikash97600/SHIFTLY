@@ -1,0 +1,275 @@
+{% extends 'adminpanel/base.html' %}
+
+{% block title %}Reputation Management - Admin - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-5 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="text-white mb-1">Reputation & Trust Score System</h1>
+            <p class="text-muted mb-0">Monitor platform trust score metrics, audit log changes, and manually trigger audits.</p>
+        </div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="row g-4 mb-5">
+        <div class="col-xl-4 col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center gap-4">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 fs-3"><i class="bi bi-people-fill"></i></div>
+                <div>
+                    <h3 class="text-white mb-0">{{ avg_student_score|floatformat:1 }}</h3>
+                    <small class="text-muted">Average Student Trust Score</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center gap-4">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 fs-3"><i class="bi bi-building"></i></div>
+                <div>
+                    <h3 class="text-white mb-0">{{ avg_business_score|floatformat:1 }}</h3>
+                    <small class="text-muted">Average Employer Trust Score</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="dash-card p-4 d-flex align-items-center gap-4">
+                <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3 fs-3"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                <div>
+                    <h3 class="text-white mb-0">{{ suspicious_count }}</h3>
+                    <small class="text-muted">Suspicious Accounts (Score < 60)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANUAL INVESTIGATION & RECALCULATION PANEL -->
+    <div class="dash-card p-4 mb-5">
+        <h5 class="text-white mb-4"><i class="bi bi-search text-warning"></i> Manual Recalculation Override</h5>
+        <form id="recalc-form" class="row g-3 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-4">
+                <label class="form-label text-muted small">Account Type</label>
+                <select name="target_type" id="target-type-select" class="form-select bg-dark border-secondary text-light">
+                    <option value="student">Student Account</option>
+                    <option value="business">Employer/Business Account</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label text-muted small">Select User Profile</label>
+                <!-- Students list dropdown -->
+                <select name="target_id" id="student-select" class="form-select bg-dark border-secondary text-light">
+                    {% for s in all_students %}
+                        <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }} ({{ s.user.email }}) - Current: {{ s.reputation_score }}</option>
+                    {% endfor %}
+                </select>
+                <!-- Businesses list dropdown (hidden by default) -->
+                <select name="target_id" id="business-select" class="form-select bg-dark border-secondary text-light d-none" disabled>
+                    {% for b in all_businesses %}
+                        <option value="{{ b.id }}">{{ b.company_name }} ({{ b.user.email }}) - Current: {{ b.reputation_score }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-premium-coral w-100 py-2.5"><i class="bi bi-arrow-repeat"></i> Run Reputation Audit</button>
+            </div>
+        </form>
+        <div id="recalc-result" class="mt-3 d-none alert alert-success py-2 px-3 small"></div>
+    </div>
+
+    <!-- SUSPICIOUS ACCOUNTS LIST -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="dash-card p-4 h-100">
+                <h5 class="text-white mb-4"><i class="bi bi-person-x-fill text-danger"></i> Suspicious Students (< 60)</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>Student</th>
+                                <th>Score</th>
+                                <th>Attendance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in suspicious_students %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-white">{{ s.first_name }} {{ s.last_name }}</div>
+                                        <small class="text-muted">{{ s.user.email }}</small>
+                                    </td>
+                                    <td><span class="text-danger fw-bold">{{ s.reputation_score }}</span></td>
+                                    <td class="text-muted">{{ s.reputation.attendance_rate }}%</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">No student profiles flagged.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="dash-card p-4 h-100">
+                <h5 class="text-white mb-4"><i class="bi bi-building-fill-exclamation text-danger"></i> Suspicious Employers (< 60)</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>Employer</th>
+                                <th>Score</th>
+                                <th>Pay Reliability</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in suspicious_businesses %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-white">{{ b.company_name }}</div>
+                                        <small class="text-muted">{{ b.user.email }}</small>
+                                    </td>
+                                    <td><span class="text-danger fw-bold">{{ b.reputation_score }}</span></td>
+                                    <td class="text-muted">{{ b.reputation.payment_timeliness_rate }}%</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">No business profiles flagged.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPARISON & AUDIT LOGS -->
+    <div class="row g-4">
+        <!-- TOP LEADERBOARD -->
+        <div class="col-lg-6">
+            <div class="dash-card p-4">
+                <h5 class="text-white mb-4"><i class="bi bi-trophy-fill text-warning"></i> Highest Rated Profiles</h5>
+                
+                <h6 class="text-gradient-coral mb-3">Top Students</h6>
+                <ul class="list-group list-group-flush bg-transparent mb-4">
+                    {% for s in highest_students %}
+                        <li class="list-group-item bg-transparent text-white border-secondary border-opacity-10 px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold">{{ s.first_name }} {{ s.last_name }}</span>
+                                <small class="text-muted d-block">{{ s.reputation.trust_badge }}</small>
+                            </div>
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill fs-6">{{ s.reputation_score }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <h6 class="text-gradient-indigo mb-3">Top Employers</h6>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for b in highest_businesses %}
+                        <li class="list-group-item bg-transparent text-white border-secondary border-opacity-10 px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold">{{ b.company_name }}</span>
+                                <small class="text-muted d-block">{{ b.reputation.trust_badge }}</small>
+                            </div>
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill fs-6">{{ b.reputation_score }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- AUDIT HISTORY -->
+        <div class="col-lg-6">
+            <div class="dash-card p-4">
+                <h5 class="text-white mb-4"><i class="bi bi-clock-history text-info"></i> Recent Audit Log History</h5>
+                
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for h in student_history %}
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-10 px-0 py-3 text-light">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong class="text-white">Student: {{ h.student.first_name }} {{ h.student.last_name }}</strong>
+                                    <span class="text-muted d-block small mt-1">{{ h.change_reason }}</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill mb-1">New Score: {{ h.reputation_score }}</span>
+                                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ h.created_at|date:"M d, H:i" }}</small>
+                                </div>
+                            </div>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item bg-transparent text-muted py-3 px-0 border-0">No recent logs recorded.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const targetType = document.getElementById("target-type-select");
+        const studentSelect = document.getElementById("student-select");
+        const businessSelect = document.getElementById("business-select");
+        const form = document.getElementById("recalc-form");
+        const resultAlert = document.getElementById("recalc-result");
+
+        targetType.addEventListener("change", () => {
+            if (targetType.value === "student") {
+                studentSelect.classList.remove("d-none");
+                studentSelect.disabled = false;
+                businessSelect.classList.add("d-none");
+                businessSelect.disabled = true;
+            } else {
+                businessSelect.classList.remove("d-none");
+                businessSelect.disabled = false;
+                studentSelect.classList.add("d-none");
+                studentSelect.disabled = true;
+            }
+        });
+
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const activeSelect = targetType.value === "student" ? studentSelect : businessSelect;
+            const targetId = activeSelect.value;
+            const targetTypeText = targetType.value;
+
+            const formData = new FormData();
+            formData.append("target_type", targetTypeText);
+            formData.append("target_id", targetId);
+            formData.append("csrfmiddlewaretoken", document.querySelector("[name=csrfmiddlewaretoken]").value);
+
+            resultAlert.className = "mt-3 alert alert-info py-2 px-3 small";
+            resultAlert.innerText = "Running reputation audit recalculation...";
+            resultAlert.classList.remove("d-none");
+
+            fetch("{% url 'admin_recalculate_reputation' %}", {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    resultAlert.className = "mt-3 alert alert-success py-2 px-3 small";
+                    resultAlert.innerText = `Audit recalculation successful! New reputation score is: ${data.new_score}`;
+                } else {
+                    resultAlert.className = "mt-3 alert alert-danger py-2 px-3 small";
+                    resultAlert.innerText = `Error: ${data.error}`;
+                }
+            })
+            .catch(err => {
+                resultAlert.className = "mt-3 alert alert-danger py-2 px-3 small";
+                resultAlert.innerText = `Network or System Error during Audit recalculation.`;
+                console.error("Recalculate error:", err);
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -34,7 +34,7 @@
                         </div>
                         
                         <div class="col-md-6">
-                            <label class="form-label text-muted">Hourly Rate Expectation ($/hr)</label>
+                            <label class="form-label text-muted">Hourly Rate Expectation (₹/hr)</label>
                             {{ form.hourly_rate_expectation }}
                             {{ form.hourly_rate_expectation.errors }}
                         </div>
@@ -78,9 +78,93 @@
                     </div>
                 </form>
             </div>
+
+            <!-- EMPLOYER REVIEWS WIDGET -->
+            <div class="dash-card p-4 mt-4">
+                <h5 class="text-white mb-4"><i class="bi bi-chat-right-quote-fill text-gradient-coral"></i> Employer Reviews & Evaluations</h5>
+                {% if reviews %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for r in reviews %}
+                            <div class="p-3 bg-glass border border-secondary border-opacity-10 rounded-4">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="text-white mb-0 fw-semibold">{{ r.match.job.title }}</h6>
+                                        <small class="text-muted">{{ r.match.job.business.company_name }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="text-warning fw-bold">{{ r.rating }} <i class="bi bi-star-fill"></i></span>
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">{{ r.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                                {% if r.feedback_text %}
+                                    <p class="text-light small mb-2">{{ r.feedback_text }}</p>
+                                {% endif %}
+                                <div class="d-flex flex-wrap gap-1.5 pt-2 border-top border-secondary border-opacity-5" style="gap: 5px;">
+                                    <span class="badge bg-secondary bg-opacity-10 text-muted small px-2 py-1 rounded">Attendance: {{ r.categories.attendance|default:"present"|capfirst }}</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-muted small px-2 py-1 rounded">Punctuality: {{ r.categories.punctuality|default:"on_time"|capfirst }}</span>
+                                    {% if r.categories.professionalism %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-muted small px-2 py-1 rounded">Professionalism: {{ r.categories.professionalism }}/5</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small mb-0">No employer evaluations received yet. Complete shifts to start earning reviews.</p>
+                {% endif %}
+            </div>
         </div>
 
         <div class="col-lg-4">
+            <!-- TRUST & REPUTATION WIDGET -->
+            <div class="dash-card p-4 mb-4">
+                <h5 class="text-white mb-4"><i class="bi bi-shield-lock-fill text-gradient-coral"></i> Trust & Reputation</h5>
+                
+                <div class="d-flex align-items-center gap-4 mb-4">
+                    <div class="position-relative">
+                        <svg viewBox="0 0 36 36" style="width: 100px; height: 100px;">
+                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#202330" stroke-width="3" />
+                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#ff7c7e" stroke-dasharray="{{ profile.reputation.reputation_score|default:100 }}, 100" stroke-linecap="round" stroke-width="3" />
+                            <text x="18" y="20.35" fill="#fff" font-size="8" text-anchor="middle" font-weight="bold">{{ profile.reputation.reputation_score|default:100 }}</text>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="small text-muted text-uppercase mb-1">Trust Level</div>
+                        <h6 class="text-gradient-coral mb-1 fw-bold">{{ profile.reputation.trust_badge|default:"⭐ Trusted Worker" }}</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">Calculated from {{ reviews.count }} shift evaluations</small>
+                    </div>
+                </div>
+
+                <div class="border-top border-secondary border-opacity-10 pt-3">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Attendance Rate</div>
+                            <div class="text-white fw-bold">{{ profile.reputation.attendance_rate|default:"100.00" }}%</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Punctuality Rate</div>
+                            <div class="text-white fw-bold">{{ profile.reputation.punctuality_rate|default:"100.00" }}%</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Completion Rate</div>
+                            <div class="text-white fw-bold">{{ profile.reputation.completion_rate|default:"100.00" }}%</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Cancellation Rate</div>
+                            <div class="text-danger fw-bold">{{ profile.reputation.cancellation_rate|default:"0.00" }}%</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Professional Score</div>
+                            <div class="text-white fw-bold">{{ profile.reputation.professional_score|default:"100.00" }}%</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Average Rating</div>
+                            <div class="text-warning fw-bold"><i class="bi bi-star-fill text-warning"></i> {{ profile.reputation.average_rating|default:"5.0" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- SKILLS WIDGET -->
             <div class="dash-card p-4">
                 <h5 class="text-white mb-4"><i class="bi bi-patch-check text-success"></i> My Skills</h5>

@@ -50,9 +50,9 @@ class StudentDashboardView(StudentRequiredMixin, TemplateView):
         active_apps = JobApplication.objects.filter(student=profile).exclude(status__in=['accepted', 'closed', 'rejected', 'withdrawn']).count()
         matches_count = Match.objects.filter(student=profile, status__in=['active', 'hired']).count()
 
-        # Recommended Jobs (Active job postings that the student hasn't swiped on yet)
+        # Recommended Jobs (Active job postings that the student hasn't swiped on yet, ordered by business reputation)
         swiped_job_ids = Swipe.objects.filter(student=profile).values_list('job_id', flat=True)
-        recommended_jobs = JobPosting.objects.filter(status='active').exclude(id__in=swiped_job_ids)[:5]
+        recommended_jobs = JobPosting.objects.filter(status='active').exclude(id__in=swiped_job_ids).select_related('business').order_by('-business__reputation_score', '-created_at')[:5]
 
         # Recent Earnings
         recent_earnings = Earning.objects.filter(student=profile).order_by('-created_at')[:5]
@@ -78,11 +78,17 @@ class StudentProfileEditView(StudentRequiredMixin, View):
         form = StudentProfileForm(instance=profile)
         skills = StudentSkill.objects.filter(student=profile)
         all_skills = Skill.objects.all()
+        
+        # Load ratings reviews
+        from ratings.models import RatingReview
+        reviews = RatingReview.objects.filter(reviewee=request.user).select_related('match__job', 'reviewer').order_by('-created_at')
+        
         return render(request, self.template_name, {
             'form': form,
             'profile': profile,
             'skills': skills,
-            'all_skills': all_skills
+            'all_skills': all_skills,
+            'reviews': reviews
         })
 
     def post(self, request):
@@ -95,11 +101,17 @@ class StudentProfileEditView(StudentRequiredMixin, View):
         
         skills = StudentSkill.objects.filter(student=profile)
         all_skills = Skill.objects.all()
+        
+        # Load ratings reviews
+        from ratings.models import RatingReview
+        reviews = RatingReview.objects.filter(reviewee=request.user).select_related('match__job', 'reviewer').order_by('-created_at')
+        
         return render(request, self.template_name, {
             'form': form,
             'profile': profile,
             'skills': skills,
-            'all_skills': all_skills
+            'all_skills': all_skills,
+            'reviews': reviews
         })
 
 
@@ -112,7 +124,7 @@ class SwipeConsoleView(StudentRequiredMixin, TemplateView):
         
         # Pull active jobs the student hasn't swiped on yet
         swiped_ids = Swipe.objects.filter(student=profile).values_list('job_id', flat=True)
-        jobs = JobPosting.objects.filter(status='active').exclude(id__in=swiped_ids).prefetch_related('required_skills__skill')
+        jobs = JobPosting.objects.filter(status='active').exclude(id__in=swiped_ids).select_related('business__reputation').prefetch_related('required_skills__skill')
         
         context.update({
             'profile': profile,
@@ -187,6 +199,24 @@ class EarningsListView(StudentRequiredMixin, TemplateView):
         
         all_earnings = Earning.objects.filter(student=profile).select_related('job__business').order_by('-created_at')
         
+        # Determine rating status for each completed shift
+        from matches.models import Match
+        from ratings.models import RatingReview
+        matches_dict = {
+            (m.student_id, m.job_id): m.id 
+            for m in Match.objects.filter(student=profile)
+        }
+        reviewed_matches = set(
+            RatingReview.objects.filter(
+                reviewer=self.request.user
+            ).values_list('match_id', flat=True)
+        )
+        
+        for e in all_earnings:
+            match_id = matches_dict.get((profile.id, e.job_id))
+            e.match_id = match_id
+            e.is_rated = match_id in reviewed_matches if match_id else True
+        
         context.update({
             'total_earned': total_earned,
             'total_escrow': total_escrow,
@@ -213,6 +243,56 @@ class MarkNotificationsReadView(StudentRequiredMixin, View):
             read_at=timezone.now()
         )
         return JsonResponse({'success': True})
+
+
+class SubmitBusinessRatingView(StudentRequiredMixin, View):
+    """
+    Form view for students to rate businesses after shift completion.
+    """
+    template_name = 'students/rate-business.html'
+
+    def get(self, request, match_id):
+        from ratings.forms import BusinessRatingReviewForm
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        match = get_object_or_404(Match, id=match_id, student=profile)
+        
+        # Check if already reviewed
+        from ratings.models import RatingReview
+        if RatingReview.objects.filter(match=match, reviewer=request.user).exists():
+            messages.info(request, "You have already reviewed this employer for this shift.")
+            return redirect('student_earnings')
+
+        form = BusinessRatingReviewForm()
+        return render(request, self.template_name, {
+            'form': form,
+            'match': match
+        })
+
+    def post(self, request, match_id):
+        from ratings.forms import BusinessRatingReviewForm
+        from ratings.models import RatingReview
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        match = get_object_or_404(Match, id=match_id, student=profile)
+
+        if RatingReview.objects.filter(match=match, reviewer=request.user).exists():
+            messages.info(request, "You have already reviewed this employer for this shift.")
+            return redirect('student_earnings')
+
+        form = BusinessRatingReviewForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                review = form.save(commit=False)
+                review.match = match
+                review.reviewer = request.user
+                review.reviewee = match.job.business.user
+                review.save()
+                messages.success(request, "Employer rating submitted successfully!")
+                return redirect('student_earnings')
+
+        return render(request, self.template_name, {
+            'form': form,
+            'match': match
+        })
 
 
 class StudentProfileView(drf_generics.RetrieveUpdateAPIView):

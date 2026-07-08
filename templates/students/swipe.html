@@ -55,13 +55,18 @@
                      data-company="{{ job.business.company_name }}"
                      data-company-logo="{{ job.business.company_logo_url|default:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=400&q=80' }}"
                      data-location="{{ job.location_name }}"
-                     data-pay="${{ job.base_pay }}<small class='fs-6 fw-normal text-muted'>/hr</small>"
+                     data-pay="₹{{ job.base_pay }}<small class='fs-6 fw-normal text-muted'>/hr</small>"
                      data-work-type="{{ job.work_type|capfirst }}"
                      data-dates="{{ job.start_date }} to {{ job.end_date }}"
                      data-time="{{ job.shift_start_time }} - {{ job.shift_end_time }}"
                      data-description="{{ job.description }}"
                      data-slots="{{ job.slots_available }}"
                      data-skills="{% for r_skill in job.required_skills.all %}{{ r_skill.skill.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
+                     data-reputation-score="{{ job.business.reputation.reputation_score|default:100 }}"
+                     data-trust-badge="{{ job.business.reputation.trust_badge|default:'👑 Elite Employer' }}"
+                     data-payment-reliability="{{ job.business.reputation.payment_timeliness_rate|default:'100.00' }}%"
+                     data-accuracy-rate="{{ job.business.reputation.job_accuracy_rate|default:'100.00' }}%"
+                     data-cancel-rate="{{ job.business.reputation.cancellation_rate|default:'0.00' }}%"
                      style="{% if not forloop.first %}transform: scale(0.95) translateY(12px); opacity: 0.7; z-index: 1;{% else %}z-index: 2;{% endif %}">
                     
                     <div class="swipe-card-image" style="background-image: url('{{ job.business.company_logo_url|default:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=400&q=80' }}')">
@@ -78,7 +83,8 @@
                                     {{ job.work_type|capfirst }}
                                 </span>
                             </div>
-                            <p class="text-muted mb-2">{{ job.business.company_name }} • {{ job.location_name }}</p>
+                            <p class="text-muted mb-1">{{ job.business.company_name }} <span class="text-gradient-coral fw-semibold small">{{ job.business.reputation.trust_badge|default:"👑 Elite Employer" }}</span></p>
+                            <p class="text-muted mb-2"><i class="bi bi-geo-alt-fill text-danger"></i> {{ job.location_name }}</p>
                             <small class="d-block text-white mb-2"><i class="bi bi-calendar3"></i> {{ job.start_date }} ({{ job.shift_start_time }} - {{ job.shift_end_time }})</small>
                             
                             <!-- Skill Badges Required -->
@@ -92,7 +98,7 @@
                         </div>
                         
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="fs-4 fw-bold text-gradient-coral">${{ job.base_pay }}<small class="fs-6 fw-normal text-muted">/hr</small></span>
+                            <span class="fs-4 fw-bold text-gradient-coral">₹{{ job.base_pay }}<small class="fs-6 fw-normal text-muted">/hr</small></span>
                             <button class="btn btn-premium-outline btn-sm py-1 px-3 btn-view-details">View Details</button>
                         </div>
                     </div>
@@ -175,6 +181,32 @@
                             <h6 class="text-muted small mb-2"><i class="bi bi-clock-fill text-gradient-coral"></i> Shift Timing</h6>
                             <p class="text-white mb-0 fw-medium" id="modal-detail-timing"></p>
                             <small class="text-muted d-block mt-1" id="modal-detail-dates"></small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EMPLOYER TRUST INDEX SECTION -->
+                <div class="p-3 bg-glass border border-secondary border-opacity-10 rounded-4 mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="text-white mb-0 fw-bold"><i class="bi bi-shield-check text-success"></i> Employer Trust Index</h6>
+                        <span id="modal-detail-badge" class="badge bg-premium-coral text-white rounded-pill px-2.5 py-1 small fw-semibold"></span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6 col-sm-3">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Trust Score</div>
+                            <div class="text-white fw-bold fs-5" id="modal-detail-rep-score"></div>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Pay Reliability</div>
+                            <div class="text-success fw-bold fs-5" id="modal-detail-pay-reliability"></div>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Job Accuracy</div>
+                            <div class="text-white fw-bold fs-5" id="modal-detail-accuracy"></div>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <div class="text-muted small" style="font-size: 0.75rem;">Cancellation</div>
+                            <div class="text-danger fw-bold fs-5" id="modal-detail-cancel-rate"></div>
                         </div>
                     </div>
                 </div>
@@ -464,6 +496,19 @@
             
             const slotsInt = parseInt(slots) || 1;
             document.getElementById("modal-detail-slots").innerText = `${slotsInt} slot${slotsInt > 1 ? 's' : ''} available`;
+
+            // Assign Business reputation fields
+            const repScore = card.getAttribute("data-reputation-score");
+            const trustBadge = card.getAttribute("data-trust-badge");
+            const payReliability = card.getAttribute("data-payment-reliability");
+            const accuracy = card.getAttribute("data-accuracy-rate");
+            const cancelRate = card.getAttribute("data-cancel-rate");
+
+            document.getElementById("modal-detail-badge").innerText = trustBadge;
+            document.getElementById("modal-detail-rep-score").innerText = `${repScore}/100`;
+            document.getElementById("modal-detail-pay-reliability").innerText = payReliability;
+            document.getElementById("modal-detail-accuracy").innerText = accuracy;
+            document.getElementById("modal-detail-cancel-rate").innerText = cancelRate;
 
             // Populate skills
             const skillsContainer = document.getElementById("modal-detail-skills");

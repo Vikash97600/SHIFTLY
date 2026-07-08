@@ -63,6 +63,10 @@ class BusinessDashboardView(BusinessRequiredMixin, TemplateView):
         # Active jobs overview
         jobs_overview = JobPosting.objects.filter(business=profile).order_by('-created_at')[:5]
 
+        # Load business reputation
+        from ratings.models import BusinessReputation
+        reputation, _ = BusinessReputation.objects.get_or_create(business=profile)
+
         context.update({
             'profile': profile,
             'total_jobs_posted': total_jobs,
@@ -72,6 +76,7 @@ class BusinessDashboardView(BusinessRequiredMixin, TemplateView):
             'escrow_held': escrow_held,
             'recent_applications': recent_applications,
             'jobs_overview': jobs_overview,
+            'reputation': reputation,
             'unread_notifications_count': Notification.objects.filter(user=self.request.user, is_read=False).count(),
         })
         return context
@@ -102,6 +107,21 @@ class BusinessProfileEditView(BusinessRequiredMixin, View):
         })
 
 
+import math
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
+        return 999999.0
+    try:
+        R = 6371.0  # Earth's radius in km
+        dlat = math.radians(float(lat2) - float(lat1))
+        dlon = math.radians(float(lon2) - float(lon1))
+        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(float(lat1))) * math.cos(math.radians(float(lat2))) * math.sin(dlon / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
+    except Exception:
+        return 999999.0
+
 class ApplicantManageView(BusinessRequiredMixin, ListView):
     template_name = 'businesses/applicants.html'
     context_object_name = 'applications'
@@ -112,7 +132,27 @@ class ApplicantManageView(BusinessRequiredMixin, ListView):
         job_id = self.request.GET.get('job_id')
         if job_id:
             queryset = queryset.filter(job_id=job_id)
-        return queryset
+        
+        apps = list(queryset)
+        
+        from ratings.models import StudentReputation
+        for app in apps:
+            student = app.student
+            rep, _ = StudentReputation.objects.get_or_create(student=student)
+            app.student_reputation = rep
+            app.distance = calculate_distance(
+                app.job.latitude, app.job.longitude,
+                student.latitude, student.longitude
+            )
+            app.reputation_score = float(student.reputation_score)
+
+        # Sort: Highest Reputation, then Nearest Distance, then Latest Activity
+        apps.sort(key=lambda x: (
+            -x.reputation_score,
+            x.distance,
+            -x.created_at.timestamp()
+        ))
+        return apps
 
 
 class HireActionView(BusinessRequiredMixin, View):
