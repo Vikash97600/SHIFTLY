@@ -67,7 +67,235 @@
                     </div>
                 </form>
             </div>
+
+            <!-- PREMIUM APPEARANCE & THEME ENGINE CARD -->
+            <div id="appearance" class="dash-card p-4 mt-4">
+                <h4 class="text-white mb-3"><i class="bi bi-palette-fill text-gradient-coral me-2"></i>Appearance Settings</h4>
+                <p class="text-muted small mb-4">Personalize your SHIFTLY workspace. Themes and settings are saved automatically.</p>
+
+                <div class="row g-4">
+                    <!-- Theme Preset selection -->
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold text-uppercase mb-2">Theme Preset</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-dark w-100 p-3 text-start border border-secondary border-opacity-20 rounded-3 theme-option-btn active" data-theme-val="midnight-neon">
+                                    <span class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="rounded-circle" style="width: 12px; height: 12px; background: #0B1120; border: 1px solid #263244;"></span>
+                                        <span class="small fw-semibold text-white">Midnight Neon</span>
+                                    </span>
+                                    <span class="d-block text-muted" style="font-size: 0.65rem;">Default Dark Theme</span>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-dark w-100 p-3 text-start border border-secondary border-opacity-20 rounded-3 theme-option-btn" data-theme-val="glass-frost">
+                                    <span class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="rounded-circle" style="width: 12px; height: 12px; background: #F3F4F6; border: 1px solid #D1D5DB;"></span>
+                                        <span class="small fw-semibold text-white">Glass Frost</span>
+                                    </span>
+                                    <span class="d-block text-muted" style="font-size: 0.65rem;">Premium Light Mode</span>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-dark w-100 p-3 text-start border border-secondary border-opacity-20 rounded-3 theme-option-btn" data-theme-val="cyber-purple">
+                                    <span class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="rounded-circle" style="width: 12px; height: 12px; background: #0B0816; border: 1px solid #A855F7;"></span>
+                                        <span class="small fw-semibold text-white">Cyber Purple</span>
+                                    </span>
+                                    <span class="d-block text-muted" style="font-size: 0.65rem;">Student Gaming Vibe</span>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-dark w-100 p-3 text-start border border-secondary border-opacity-20 rounded-3 theme-option-btn" data-theme-val="emerald-professional">
+                                    <span class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="rounded-circle" style="width: 12px; height: 12px; background: #041410; border: 1px solid #10B981;"></span>
+                                        <span class="small fw-semibold text-white">Emerald Pro</span>
+                                    </span>
+                                    <span class="d-block text-muted" style="font-size: 0.65rem;">Enterprise & Business</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accent selection & Switch Toggles -->
+                    <div class="col-md-6 d-flex flex-column justify-content-between">
+                        <div class="mb-4">
+                            <label class="form-label text-muted small fw-bold text-uppercase mb-2">Accent Color</label>
+                            <div class="d-flex gap-3 align-items-center">
+                                <button type="button" class="btn p-0 rounded-circle border border-2 border-transparent accent-option-btn active" data-accent-val="coral" style="width: 32px; height: 32px; background: #FF4D5A;" title="Coral Red"></button>
+                                <button type="button" class="btn p-0 rounded-circle border border-2 border-transparent accent-option-btn" data-accent-val="blue" style="width: 32px; height: 32px; background: #3B82F6;" title="Electric Blue"></button>
+                                <button type="button" class="btn p-0 rounded-circle border border-2 border-transparent accent-option-btn" data-accent-val="purple" style="width: 32px; height: 32px; background: #8B5CF6;" title="Royal Purple"></button>
+                                <button type="button" class="btn p-0 rounded-circle border border-2 border-transparent accent-option-btn" data-accent-val="green" style="width: 32px; height: 32px; background: #10B981;" title="Emerald Green"></button>
+                                <button type="button" class="btn p-0 rounded-circle border border-2 border-transparent accent-option-btn" data-accent-val="orange" style="width: 32px; height: 32px; background: #F97316;" title="Sunset Orange"></button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label text-muted small fw-bold text-uppercase mb-2">Extra Visual Tuning</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0 mb-2">
+                                        <label class="form-check-label text-light small me-2" for="opt-glass">Glass Effects</label>
+                                        <input class="form-check-input ms-0" type="checkbox" role="switch" id="opt-glass" checked>
+                                    </div>
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0 mb-2">
+                                        <label class="form-check-label text-light small me-2" for="opt-rounded">Rounded Cards</label>
+                                        <input class="form-check-input ms-0" type="checkbox" role="switch" id="opt-rounded" checked>
+                                    </div>
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                                        <label class="form-check-label text-light small me-2" for="opt-compact">Compact Spacing</label>
+                                        <input class="form-check-input ms-0" type="checkbox" role="switch" id="opt-compact">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0 mb-2">
+                                        <label class="form-check-label text-light small me-2" for="opt-motion">Enable Transitions</label>
+                                        <input class="form-check-input ms-0" type="checkbox" role="switch" id="opt-motion" checked>
+                                    </div>
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0 mb-2">
+                                        <label class="form-check-label text-light small me-2" for="opt-contrast">High Contrast Mode</label>
+                                        <input class="form-check-input ms-0" type="checkbox" role="switch" id="opt-contrast">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // ---- APPEARANCE SYSTEM ENGINE ----
+    const themeBtns = document.querySelectorAll(".theme-option-btn");
+    const accentBtns = document.querySelectorAll(".accent-option-btn");
+    const optGlass = document.getElementById("opt-glass");
+    const optRounded = document.getElementById("opt-rounded");
+    const optCompact = document.getElementById("opt-compact");
+    const optMotion = document.getElementById("opt-motion");
+    const optContrast = document.getElementById("opt-contrast");
+
+    // Load initial values from localStorage or defaults
+    const currentTheme = localStorage.getItem("shiftly_theme") || "midnight-neon";
+    const currentAccent = localStorage.getItem("shiftly_accent") || "coral";
+    const currentGlass = localStorage.getItem("shiftly_glass") !== "false";
+    const currentRounded = localStorage.getItem("shiftly_rounded") !== "false";
+    const currentCompact = localStorage.getItem("shiftly_compact") === "true";
+    const currentMotion = localStorage.getItem("shiftly_motion") !== "false";
+    const currentContrast = localStorage.getItem("shiftly_contrast") === "true";
+
+    // Set initial button active states
+    themeBtns.forEach(btn => {
+        if (btn.getAttribute("data-theme-val") === currentTheme) {
+            btn.classList.add("active", "border-primary");
+            btn.style.borderColor = "var(--theme-accent)";
+        } else {
+            btn.classList.remove("active", "border-primary");
+            btn.style.borderColor = "";
+        }
+    });
+
+    accentBtns.forEach(btn => {
+        if (btn.getAttribute("data-accent-val") === currentAccent) {
+            btn.classList.add("active");
+            btn.style.boxShadow = "0 0 0 3px rgba(255, 255, 255, 0.4), 0 0 0 5px " + btn.style.backgroundColor;
+        } else {
+            btn.classList.remove("active");
+            btn.style.boxShadow = "";
+        }
+    });
+
+    // Set initial switch states
+    if (optGlass) optGlass.checked = currentGlass;
+    if (optRounded) optRounded.checked = currentRounded;
+    if (optCompact) optCompact.checked = currentCompact;
+    if (optMotion) optMotion.checked = currentMotion;
+    if (optContrast) optContrast.checked = currentContrast;
+
+    // Theme handler
+    themeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const val = btn.getAttribute("data-theme-val");
+            localStorage.setItem("shiftly_theme", val);
+            document.documentElement.setAttribute("data-theme", val);
+            
+            // Toggle active classes
+            themeBtns.forEach(b => {
+                b.classList.remove("active", "border-primary");
+                b.style.borderColor = "";
+            });
+            btn.classList.add("active", "border-primary");
+            btn.style.borderColor = "var(--theme-accent)";
+        });
+    });
+
+    // Accent handler
+    accentBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const val = btn.getAttribute("data-accent-val");
+            localStorage.setItem("shiftly_accent", val);
+            document.documentElement.setAttribute("data-accent", val);
+            
+            // Toggle active classes
+            accentBtns.forEach(b => {
+                b.classList.remove("active");
+                b.style.boxShadow = "";
+            });
+            btn.classList.add("active");
+            btn.style.boxShadow = "0 0 0 3px rgba(255, 255, 255, 0.4), 0 0 0 5px " + btn.style.backgroundColor;
+            
+            // Update active theme button border color if using accent color
+            const activeThemeBtn = document.querySelector(".theme-option-btn.active");
+            if (activeThemeBtn) {
+                activeThemeBtn.style.borderColor = "var(--theme-accent)";
+            }
+        });
+    });
+
+    // Switch handlers
+    if (optGlass) {
+        optGlass.addEventListener("change", () => {
+            const checked = optGlass.checked;
+            localStorage.setItem("shiftly_glass", checked);
+            document.documentElement.setAttribute("data-glass", checked.toString());
+        });
+    }
+
+    if (optRounded) {
+        optRounded.addEventListener("change", () => {
+            const checked = optRounded.checked;
+            localStorage.setItem("shiftly_rounded", checked);
+            document.documentElement.setAttribute("data-rounded", checked.toString());
+        });
+    }
+
+    if (optCompact) {
+        optCompact.addEventListener("change", () => {
+            const checked = optCompact.checked;
+            localStorage.setItem("shiftly_compact", checked);
+            document.documentElement.setAttribute("data-compact", checked.toString());
+        });
+    }
+
+    if (optMotion) {
+        optMotion.addEventListener("change", () => {
+            const checked = optMotion.checked;
+            localStorage.setItem("shiftly_motion", checked);
+            document.documentElement.setAttribute("data-motion", checked.toString());
+        });
+    }
+
+    if (optContrast) {
+        optContrast.addEventListener("change", () => {
+            const checked = optContrast.checked;
+            localStorage.setItem("shiftly_contrast", checked);
+            document.documentElement.setAttribute("data-contrast", checked.toString());
+        });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}
