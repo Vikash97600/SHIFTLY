@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.views.generic import ListView
 from django.contrib import messages
+from django.db.models import ProtectedError, RestrictedError
 from businesses.views import BusinessRequiredMixin
 from businesses.models import BusinessProfile
 from .models import JobPosting
@@ -65,4 +66,56 @@ class JobStatusUpdateView(BusinessRequiredMixin, View):
             messages.success(request, f"Status of '{job.title}' updated to {job.get_status_display()}.")
         else:
             messages.error(request, "Invalid status choice.")
+        return redirect('job_management')
+
+
+class JobEditView(BusinessRequiredMixin, View):
+    """
+    Form view for business owners to edit an existing shift.
+    """
+    template_name = 'businesses/edit-job.html'
+
+    def get(self, request, job_id):
+        profile = get_object_or_404(BusinessProfile, user=request.user)
+        job = get_object_or_404(JobPosting, id=job_id, business=profile)
+        form = JobPostingForm(instance=job)
+        return render(request, self.template_name, {
+            'form': form,
+            'job': job,
+            'profile': profile
+        })
+
+    def post(self, request, job_id):
+        profile = get_object_or_404(BusinessProfile, user=request.user)
+        job = get_object_or_404(JobPosting, id=job_id, business=profile)
+        form = JobPostingForm(request.POST, instance=job)
+        if form.is_valid():
+            job = form.save()
+            messages.success(request, f"Shift '{job.title}' updated successfully!")
+            return redirect('job_management')
+        
+        return render(request, self.template_name, {
+            'form': form,
+            'job': job,
+            'profile': profile
+        })
+
+
+class JobDeleteView(BusinessRequiredMixin, View):
+    """
+    Handles deleting a shift posting, preventing deletion if restricted relations exist.
+    """
+    def post(self, request, job_id):
+        profile = get_object_or_404(BusinessProfile, user=request.user)
+        job = get_object_or_404(JobPosting, id=job_id, business=profile)
+        title = job.title
+        try:
+            job.delete()
+            messages.success(request, f"Shift '{title}' has been deleted successfully.")
+        except (ProtectedError, RestrictedError):
+            messages.error(
+                request, 
+                f"Shift '{title}' cannot be deleted because there are active applications, matches, or earnings associated with it. "
+                "You can change its status to 'Cancelled' or 'Archived' instead."
+            )
         return redirect('job_management')
