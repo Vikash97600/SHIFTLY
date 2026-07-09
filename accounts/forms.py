@@ -131,6 +131,12 @@ class RegisterForm(forms.ModelForm):
                 raise forms.ValidationError(_("Address is required for business accounts."))
             if not cleaned_data.get('business_category'):
                 raise forms.ValidationError(_("Business category is required for business accounts."))
+            
+            gst_number = cleaned_data.get('gst_number')
+            if gst_number:
+                from businesses.models import BusinessProfile
+                if BusinessProfile.objects.filter(gst_number=gst_number).exists() or BusinessProfile.objects.filter(business_registration_no=gst_number).exists():
+                    self.add_error('gst_number', _("A business with this GST number is already registered."))
 
         return cleaned_data
 

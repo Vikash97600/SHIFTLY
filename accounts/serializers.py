@@ -85,6 +85,11 @@ class RegisterSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"address": "Required for business registration"})
             if not attrs.get('business_category'):
                 raise serializers.ValidationError({"business_category": "Required for business registration"})
+            
+            gst_number = attrs.get('gst_number')
+            if gst_number:
+                if BusinessProfile.objects.filter(gst_number=gst_number).exists() or BusinessProfile.objects.filter(business_registration_no=gst_number).exists():
+                    raise serializers.ValidationError({"gst_number": "A business with this GST number is already registered."})
         return attrs
 
     @transaction.atomic

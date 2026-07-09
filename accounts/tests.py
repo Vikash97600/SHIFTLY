@@ -62,6 +62,24 @@ class AuthenticationTests(APITestCase):
         self.assertTrue(BusinessProfile.objects.filter(user=user).exists())
         self.assertEqual(user.business_profile.company_name, "Acme Corp")
 
+    def test_business_registration_duplicate_gst_number(self):
+        """
+        Verify that registering two business owners with the same GST number
+        is rejected with a validation error on the API endpoint.
+        """
+        business_data_1 = self.business_data.copy()
+        business_data_1["gst_number"] = "GSTIN753159824"
+        response_1 = self.client.post(self.register_url, business_data_1, format='json')
+        self.assertEqual(response_1.status_code, status.HTTP_201_CREATED)
+
+        business_data_2 = self.business_data.copy()
+        business_data_2["email"] = "business_diff@shiftly.com"
+        business_data_2["gst_number"] = "GSTIN753159824"
+        response_2 = self.client.post(self.register_url, business_data_2, format='json')
+        
+        self.assertEqual(response_2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("gst_number", response_2.data)
+
     def test_registration_validation(self):
         """
         Ensure required details are checked per role.
@@ -250,6 +268,47 @@ class HTMLAuthenticationTests(TestCase):
         self.assertEqual(user.business_profile.company_name, "Red Coffee Corp")
         self.assertEqual(user.status, self.user_model.AccountStatus.PENDING)
         self.assertFalse(user.is_active)
+
+    def test_html_registration_business_duplicate_gst_number(self):
+        """
+        Verify that registering a business owner via HTML page with a duplicate GST
+        number displays an error on the form.
+        """
+        # Register first business via HTML
+        post_data_1 = {
+            "email": "testbusiness1@shiftly.com",
+            "role": "business",
+            "company_name": "Red Coffee Corp 1",
+            "owner_name": "Sarah Smith",
+            "mobile_number": "+1 (555) 019-2834",
+            "address": "123 Main St",
+            "business_category": "Food Services",
+            "gst_number": "GSTIN753159824",
+            "password": "strongpassword123",
+            "confirm_password": "strongpassword123"
+        }
+        response_1 = self.client.post(reverse('register_page'), post_data_1)
+        self.assertRedirects(response_1, reverse('login_page'))
+
+        # Register second business with same GST number via HTML
+        post_data_2 = {
+            "email": "testbusiness2@shiftly.com",
+            "role": "business",
+            "company_name": "Red Coffee Corp 2",
+            "owner_name": "Sarah Smith",
+            "mobile_number": "+1 (555) 019-2834",
+            "address": "123 Main St",
+            "business_category": "Food Services",
+            "gst_number": "GSTIN753159824",
+            "password": "strongpassword123",
+            "confirm_password": "strongpassword123"
+        }
+        response_2 = self.client.post(reverse('register_page'), post_data_2)
+        
+        # It should not redirect because of validation error (should stay on the page and show error)
+        self.assertEqual(response_2.status_code, 200)
+        self.assertTemplateUsed(response_2, 'register.html')
+        self.assertFormError(response_2, 'form', 'gst_number', "A business with this GST number is already registered.")
 
     def test_html_login_redirect_student(self):
         # Create user first
