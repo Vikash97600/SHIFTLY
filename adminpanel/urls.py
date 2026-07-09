@@ -4,7 +4,7 @@ from .views import (
     AdminVerificationsView, AdminReportsView, AdminToggleUserActiveView,
     AdminVerifyRequestActionView, AdminJobModerationActionView, AdminReportResolveActionView,
     AdminBusinessApprovalActionView, AdminReputationView, AdminRecalculateReputationActionView,
-    AdminExportVerificationsCSVView
+    AdminExportVerificationsCSVView, AdminDeleteUserView
 )
 
 urlpatterns = [
@@ -19,6 +19,7 @@ urlpatterns = [
     
     # AJAX Moderation Actions
     path('users/toggle/<int:user_id>/', AdminToggleUserActiveView.as_view(), name='admin_toggle_user'),
+    path('users/delete/<int:user_id>/', AdminDeleteUserView.as_view(), name='admin_delete_user'),
     path('verifications/action/<int:request_id>/', AdminVerifyRequestActionView.as_view(), name='admin_verification_action'),
     path('businesses/action/<int:business_id>/', AdminBusinessApprovalActionView.as_view(), name='admin_business_approval_action'),
     path('jobs/action/<int:job_id>/', AdminJobModerationActionView.as_view(), name='admin_job_action'),

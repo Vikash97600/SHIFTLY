@@ -58,15 +58,22 @@
                                 </td>
                                 <td class="text-end">
                                     {% if user != request.user %}
-                                        <button class="btn btn-sm rounded-pill toggle-active-btn {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
-                                                data-id="{{ user.id }}" 
-                                                data-active="{{ user.is_active|yesno:'true,false' }}">
-                                            {% if user.is_active %}
-                                                <i class="bi bi-person-dash"></i> Suspend
-                                            {% else %}
-                                                <i class="bi bi-person-check"></i> Activate
-                                            {% endif %}
-                                        </button>
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <button class="btn btn-sm rounded-pill toggle-active-btn {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                                                    data-id="{{ user.id }}" 
+                                                    data-active="{{ user.is_active|yesno:'true,false' }}">
+                                                {% if user.is_active %}
+                                                    <i class="bi bi-person-dash"></i> Suspend
+                                                {% else %}
+                                                    <i class="bi bi-person-check"></i> Activate
+                                                {% endif %}
+                                            </button>
+                                            <button class="btn btn-sm btn-danger rounded-pill delete-user-btn" 
+                                                    data-id="{{ user.id }}" 
+                                                    data-email="{{ user.email }}">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </div>
                                     {% else %}
                                         <button class="btn btn-sm btn-outline-secondary rounded-pill" disabled><i class="bi bi-lock-fill"></i> Protected</button>
                                     {% endif %}
@@ -109,6 +116,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const toggleButtons = document.querySelectorAll(".toggle-active-btn");
+        const deleteButtons = document.querySelectorAll(".delete-user-btn");
         const csrfToken = document.querySelector("#csrf-form [name=csrfmiddlewaretoken]").value;
 
         toggleButtons.forEach(btn => {
@@ -152,6 +160,44 @@
                     btn.disabled = false;
                     console.error("Action failed:", err);
                 });
+            });
+        });
+
+        deleteButtons.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const userId = btn.getAttribute("data-id");
+                const userEmail = btn.getAttribute("data-email");
+                
+                if (confirm(`Are you sure you want to permanently delete user ${userEmail}? This will delete all their data, including profile, listings, matches, and chats.`)) {
+                    const formData = new FormData();
+                    formData.append('csrfmiddlewaretoken', csrfToken);
+
+                    btn.disabled = true;
+
+                    fetch(`/api/v1/adminpanel/users/delete/${userId}/`, {
+                        method: "POST",
+                        body: formData,
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        btn.disabled = false;
+                        if (data.success) {
+                            const userRow = document.getElementById(`user-row-${userId}`);
+                            if (userRow) {
+                                userRow.remove();
+                            }
+                        } else {
+                            alert("Error: " + (data.error || "Failed to delete user."));
+                        }
+                    })
+                    .catch(err => {
+                        btn.disabled = false;
+                        console.error("Action failed:", err);
+                    });
+                }
             });
         });
     });

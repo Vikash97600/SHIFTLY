@@ -601,3 +601,149 @@ class AdminRecalculateReputationActionView(AdminRequiredMixin, View):
         )
 
         return JsonResponse({'success': True, 'new_score': float(new_score)})
+
+
+from django.db import transaction
+
+class AdminDeleteUserView(AdminRequiredMixin, View):
+    """
+    POST View to delete a student or business owner and all associated data.
+    """
+    def post(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        if user == request.user:
+            return JsonResponse({'error': 'Cannot delete yourself'}, status=400)
+            
+        if user.role not in ['student', 'business']:
+            return JsonResponse({'error': 'Can only delete students or business owners'}, status=400)
+
+        email = user.email
+        role = user.role
+
+        try:
+            with transaction.atomic():
+                if role == 'student':
+                    if hasattr(user, 'student_profile'):
+                        profile = user.student_profile
+                        
+                        # 1. Chat rooms and messages
+                        from chat.models import ChatRoom, ChatMessage
+                        matches = profile.matches.all()
+                        ChatRoom.objects.filter(match__in=matches).delete()
+                        ChatMessage.objects.filter(sender=user).delete()
+                        
+                        # 2. Reviews
+                        from ratings.models import RatingReview
+                        RatingReview.objects.filter(Q(reviewer=user) | Q(reviewee=user)).delete()
+                        
+                        # 3. Match & Application records
+                        from matches.models import Match, JobApplication
+                        JobApplication.objects.filter(student=profile).delete()
+                        Match.objects.filter(student=profile).delete()
+                        
+                        # 4. Earnings
+                        from businesses.models import Earning
+                        Earning.objects.filter(student=profile).delete()
+                        
+                        # 5. Badges
+                        from badges.models import StudentBadge
+                        StudentBadge.objects.filter(student=profile).delete()
+                        
+                        # 6. Swipes
+                        from swipes.models import Swipe
+                        Swipe.objects.filter(student=profile).delete()
+                        
+                        # 7. File cleanup
+                        if profile.resume:
+                            profile.resume.delete(save=False)
+                        if profile.portfolio_file:
+                            profile.portfolio_file.delete(save=False)
+                            
+                        # 8. Delete Profile
+                        profile.delete()
+                        
+                elif role == 'business':
+                    if hasattr(user, 'business_profile'):
+                        profile = user.business_profile
+                        
+                        # 1. Jobs posted by this business
+                        from jobs.models import JobPosting, JobRequiredSkill
+                        jobs = JobPosting.objects.filter(business=profile)
+                        
+                        # 2. Chat rooms for matches of these jobs
+                        from matches.models import Match, JobApplication
+                        matches = Match.objects.filter(job__in=jobs)
+                        from chat.models import ChatRoom, ChatMessage
+                        ChatRoom.objects.filter(match__in=matches).delete()
+                        ChatMessage.objects.filter(sender=user).delete()
+                        
+                        # 3. Reviews
+                        from ratings.models import RatingReview
+                        RatingReview.objects.filter(Q(reviewer=user) | Q(reviewee=user)).delete()
+                        
+                        # 4. Earnings
+                        from businesses.models import Earning
+                        Earning.objects.filter(Q(business=profile) | Q(job__in=jobs)).delete()
+                        
+                        # 5. Matches & Applications
+                        JobApplication.objects.filter(job__in=jobs).delete()
+                        Match.objects.filter(job__in=jobs).delete()
+                        
+                        # 6. Swipes on these jobs
+                        from swipes.models import Swipe
+                        Swipe.objects.filter(job__in=jobs).delete()
+                        
+                        # 7. Job Required Skills
+                        JobRequiredSkill.objects.filter(job__in=jobs).delete()
+                        
+                        # 8. Badges awarded by this user
+                        from badges.models import StudentBadge
+                        StudentBadge.objects.filter(awarded_by=user).delete()
+                        
+                        # 9. Job postings
+                        jobs.delete()
+                        
+                        # 10. File cleanup
+                        if profile.business_license:
+                            profile.business_license.delete(save=False)
+                        if profile.gst_document:
+                            profile.gst_document.delete(save=False)
+                        if profile.tax_document:
+                            profile.tax_document.delete(save=False)
+                            
+                        # 11. Delete Profile
+                        profile.delete()
+                
+                # Common Cleanup
+                # 1. Reports
+                from reports.models import Report
+                Report.objects.filter(Q(reporter=user) | Q(reported_user=user)).delete()
+                
+                # 2. Notifications
+                from notifications.models import Notification
+                Notification.objects.filter(user=user).delete()
+                
+                # 3. Verifications
+                from accounts.models import Verification, ReputationLog
+                Verification.objects.filter(user=user).delete()
+                
+                # 4. Reputation logs
+                ReputationLog.objects.filter(user=user).delete()
+                
+                # 5. Audit Log
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action='delete_user',
+                    target_table='accounts_user',
+                    target_id=user_id,
+                    details={'email': email, 'role': role}
+                )
+                
+                # 6. Delete user
+                user.delete()
+                
+        except Exception as e:
+            return JsonResponse({'error': f'Failed to delete user: {str(e)}'}, status=500)
+
+        return JsonResponse({'success': True})
+

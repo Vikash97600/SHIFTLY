@@ -237,3 +237,47 @@ class AdminPanelTests(TestCase):
         self.assertIn("Business Name,Owner Name,Email,Mobile", content)
         self.assertIn("Red Coffee", content)
 
+    def test_ajax_delete_user(self):
+        """
+        Verify that an administrator can delete a student user and a business user,
+        and all associated data is deleted.
+        """
+        self.client.login(email="admin@shiftly.com", password="password123")
+        
+        # Try to delete ourselves (admin user) -> should fail (400)
+        delete_self_url = reverse('admin_delete_user', args=[self.admin_user.id])
+        response = self.client.post(delete_self_url, {}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        
+        # Delete student user
+        delete_student_url = reverse('admin_delete_user', args=[self.student_user.id])
+        response = self.client.post(delete_student_url, {}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        
+        # Check that user, student profile, matches, reports, verifications, and earnings no longer exist
+        self.assertFalse(User.objects.filter(id=self.student_user.id).exists())
+        self.assertFalse(StudentProfile.objects.filter(id=self.student_profile.id).exists())
+        self.assertFalse(Match.objects.filter(student=self.student_profile).exists())
+        self.assertFalse(Earning.objects.filter(student=self.student_profile).exists())
+        self.assertFalse(Report.objects.filter(reporter=self.student_user).exists())
+        
+        # Verify audit logging
+        self.assertTrue(AuditLog.objects.filter(action='delete_user', target_id=self.student_user.id).exists())
+
+        # Try to delete business user
+        delete_business_url = reverse('admin_delete_user', args=[self.business_user.id])
+        response = self.client.post(delete_business_url, {}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        
+        # Check that business user, business profile, jobs, matches, and verifications no longer exist
+        self.assertFalse(User.objects.filter(id=self.business_user.id).exists())
+        self.assertFalse(BusinessProfile.objects.filter(id=self.business_profile.id).exists())
+        self.assertFalse(JobPosting.objects.filter(business=self.business_profile).exists())
+        self.assertFalse(Verification.objects.filter(user=self.business_user).exists())
+        
+        # Verify audit logging
+        self.assertTrue(AuditLog.objects.filter(action='delete_user', target_id=self.business_user.id).exists())
+
+
