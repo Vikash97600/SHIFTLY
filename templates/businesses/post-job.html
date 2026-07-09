@@ -29,31 +29,52 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label text-muted">Work Setup Type</label>
-                            {{ form.work_type }}
-                            {{ form.work_type.errors }}
+                            <label class="form-label text-muted">Job Category</label>
+                            {{ form.category }}
+                            {{ form.category.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Job Mode</label>
+                            {{ form.job_mode }}
+                            {{ form.job_mode.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Hiring Radius</label>
+                            {{ form.hiring_radius }}
+                            {{ form.hiring_radius.errors }}
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Hourly Base Rate (₹/hr)</label>
                             {{ form.base_pay }}
                             {{ form.base_pay.errors }}
                         </div>
-
-                        <div class="col-12">
-                            <label class="form-label text-muted">Location Name / Address</label>
-                            {{ form.location_name }}
-                            {{ form.location_name.errors }}
+                        <div class="col-12 d-flex align-items-center">
+                            <div class="form-check form-switch mt-2">
+                                {{ form.is_urgent }}
+                                <label class="form-check-label text-white fw-bold fs-6 ms-2" for="id_is_urgent">🚨 Urgent Hiring Shift</label>
+                                {{ form.is_urgent.errors }}
+                            </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label text-muted">Latitude</label>
-                            {{ form.latitude }}
-                            {{ form.latitude.errors }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted">Longitude</label>
-                            {{ form.longitude }}
-                            {{ form.longitude.errors }}
+                        <!-- Location Wrapper -->
+                        <div class="col-12" id="location-fields-wrapper">
+                            <div class="row g-4">
+                                <div class="col-12">
+                                    <label class="form-label text-muted">Location Name / Address</label>
+                                    {{ form.location_name }}
+                                    {{ form.location_name.errors }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">Latitude</label>
+                                    {{ form.latitude }}
+                                    {{ form.latitude.errors }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">Longitude</label>
+                                    {{ form.longitude }}
+                                    {{ form.longitude.errors }}
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-md-6">
@@ -92,4 +113,55 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const categorySelect = document.getElementById("id_category");
+        const jobModeSelect = document.getElementById("id_job_mode");
+        const radiusSelect = document.getElementById("id_hiring_radius");
+        const locationWrapper = document.getElementById("location-fields-wrapper");
+
+        const categoryRadiusMap = {
+            'cafe_restaurant': { radius: '3.00', mode: 'onsite' },
+            'retail_shop': { radius: '5.00', mode: 'onsite' },
+            'office_assistant': { radius: '5.00', mode: 'onsite' },
+            'event_staffing': { radius: '10.00', mode: 'onsite' },
+            'delivery_partner': { radius: '10.00', mode: 'onsite' },
+            'video_editor': { radius: '999.00', mode: 'remote' },
+            'graphic_designer': { radius: '999.00', mode: 'remote' },
+            'software_developer': { radius: '999.00', mode: 'remote' }
+        };
+
+        function toggleLocationFields() {
+            if (jobModeSelect.value === 'remote') {
+                locationWrapper.style.display = 'none';
+                radiusSelect.value = '999.00';
+            } else {
+                locationWrapper.style.display = 'block';
+                if (radiusSelect.value === '999.00') {
+                    radiusSelect.value = '4.00'; // fallback default
+                }
+            }
+        }
+
+        categorySelect.addEventListener("change", () => {
+            const val = categorySelect.value;
+            if (categoryRadiusMap[val]) {
+                const config = categoryRadiusMap[val];
+                jobModeSelect.value = config.mode;
+                radiusSelect.value = config.radius;
+                toggleLocationFields();
+            }
+        });
+
+        jobModeSelect.addEventListener("change", () => {
+            toggleLocationFields();
+        });
+
+        // Initialize state
+        toggleLocationFields();
+    });
+</script>
 {% endblock %}

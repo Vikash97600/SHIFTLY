@@ -2,6 +2,37 @@
 
 {% block title %}Dashboard - SHIFTLY{% endblock %}
 
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        border-bottom: 2px solid transparent !important;
+        transition: all 0.2s ease-in-out;
+        opacity: 0.7;
+    }
+    .nav-tabs .nav-link:hover {
+        color: var(--theme-accent) !important;
+        opacity: 1;
+    }
+    .nav-tabs .nav-link.active {
+        color: var(--theme-accent) !important;
+        border-bottom: 2px solid var(--theme-accent) !important;
+        background: transparent !important;
+        opacity: 1;
+    }
+    .hover-glow {
+        transition: all 0.25s ease;
+    }
+    .hover-glow:hover {
+        border-color: var(--theme-accent-glow) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .fs-7 {
+        font-size: 0.85rem !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid p-0">
     <div class="d-flex justify-content-between align-items-center mb-5">
@@ -52,46 +83,157 @@
         </div>
     </div>
 
-    <div class="row g-4">
-        <!-- RECOMMENDED SHIFTS -->
-        <div class="col-lg-7">
-            <div class="dash-card p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="text-white mb-0"><i class="bi bi-stars text-warning"></i> Recommended Shifts</h5>
-                    <a href="{% url 'student_swipe' %}" class="text-gradient-coral text-decoration-none fw-semibold">Swipe All <i class="bi bi-arrow-right"></i></a>
+    <!-- SEARCH & FILTERS PANEL -->
+    <div class="dash-card p-4 mb-5">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label text-muted small"><i class="bi bi-geo-alt-fill text-danger small"></i> Distance Limit</label>
+                <select name="radius" class="form-select bg-dark border-secondary text-light">
+                    <option value="" {% if not request.GET.radius %}selected{% endif %}>Any Distance</option>
+                    <option value="2.00" {% if request.GET.radius == "2.00" %}selected{% endif %}>Within 2 KM</option>
+                    <option value="5.00" {% if request.GET.radius == "5.00" %}selected{% endif %}>Within 5 KM</option>
+                    <option value="10.00" {% if request.GET.radius == "10.00" %}selected{% endif %}>Within 10 KM</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small"><i class="bi bi-globe text-success small"></i> Work Mode</label>
+                <select name="remote_only" class="form-select bg-dark border-secondary text-light">
+                    <option value="" {% if not request.GET.remote_only %}selected{% endif %}>All Modes</option>
+                    <option value="true" {% if request.GET.remote_only == "true" %}selected{% endif %}>Remote Only</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small"><i class="bi bi-sort-down"></i> Sort By</label>
+                <select name="sort" class="form-select bg-dark border-secondary text-light">
+                    <option value="" {% if not request.GET.sort %}selected{% endif %}>Proximity / Relevance</option>
+                    <option value="salary" {% if request.GET.sort == "salary" %}selected{% endif %}>Highest Salary</option>
+                    <option value="newest" {% if request.GET.sort == "newest" %}selected{% endif %}>Newest Jobs</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex flex-column gap-2">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" role="switch" id="filterUrgent" name="urgent" value="true" {% if request.GET.urgent == "true" %}checked{% endif %}>
+                    <label class="form-check-label text-white small" for="filterUrgent">🚨 Urgent Hiring Only</label>
                 </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-premium-coral w-100 py-2"><i class="bi bi-filter"></i> Filter</button>
+                    <a href="{% url 'student_dashboard' %}" class="btn btn-premium-outline py-2 px-3"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </div>
+        </form>
+    </div>
 
-                {% if recommended_jobs %}
-                    <div class="d-flex flex-column gap-3">
-                        {% for job in recommended_jobs %}
-                            <div class="p-3 bg-glass border border-secondary border-opacity-10 rounded-4 d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-dark p-2 rounded-3 border border-secondary border-opacity-10" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
-                                        <i class="bi bi-briefcase-fill text-danger fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="text-white mb-0">{{ job.title }}</h6>
-                                        <small class="text-muted">{{ job.business.company_name }} • {{ job.location_name }}</small>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <span class="d-block text-white fw-bold">₹{{ job.base_pay }}/hr</span>
-                                    <small class="text-success"><i class="bi bi-lightning-charge"></i> Instant Match</small>
-                                </div>
+    <div class="row g-4">
+        <!-- JOBS TABS CONTAINER -->
+        <div class="col-lg-8">
+            <div class="dash-card p-4">
+                <!-- Tab Headers -->
+                <ul class="nav nav-tabs border-secondary border-opacity-10 mb-4 d-flex flex-nowrap overflow-x-auto pb-1" id="jobTabs" role="tablist" style="gap: 5px;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active text-white border-0 bg-transparent py-2.5 px-3 fw-bold fs-7" id="nearby-tab" data-bs-toggle="tab" data-bs-target="#nearby-panel" type="button" role="tab" aria-controls="nearby-panel" aria-selected="true">
+                            📍 Nearby Shifts
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-white border-0 bg-transparent py-2.5 px-3 fw-bold fs-7" id="urgent-tab" data-bs-toggle="tab" data-bs-target="#urgent-panel" type="button" role="tab" aria-controls="urgent-panel" aria-selected="false">
+                            🚨 Urgent Hiring
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-white border-0 bg-transparent py-2.5 px-3 fw-bold fs-7" id="remote-tab" data-bs-toggle="tab" data-bs-target="#remote-panel" type="button" role="tab" aria-controls="remote-panel" aria-selected="false">
+                            💻 Remote Shifts
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-white border-0 bg-transparent py-2.5 px-3 fw-bold fs-7" id="recommended-tab" data-bs-toggle="tab" data-bs-target="#recommended-panel" type="button" role="tab" aria-controls="recommended-panel" aria-selected="false">
+                            ⭐ Recommended
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-white border-0 bg-transparent py-2.5 px-3 fw-bold fs-7" id="newly-tab" data-bs-toggle="tab" data-bs-target="#newly-panel" type="button" role="tab" aria-controls="newly-panel" aria-selected="false">
+                            🆕 Newly Posted
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="jobTabsContent">
+                    <!-- 1. NEARBY SHIFTS PANEL -->
+                    <div class="tab-pane fade show active" id="nearby-panel" role="tabpanel" aria-labelledby="nearby-tab">
+                        {% if nearby_jobs %}
+                            {% for job in nearby_jobs %}
+                                {% include 'students/includes/job_card.html' with job=job %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-geo text-muted display-4"></i>
+                                <p class="text-muted mt-3">No nearby shifts found within your visibility area.</p>
+                                <a href="{% url 'student_profile_edit' %}" class="btn btn-premium-outline btn-sm rounded-pill px-4"><i class="bi bi-geo-alt"></i> Update My Location</a>
                             </div>
-                        {% endfor %}
+                        {% endif %}
                     </div>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-check2-all text-muted display-4"></i>
-                        <p class="text-muted mt-3">You've swiped on all available shifts. Check back later!</p>
+
+                    <!-- 2. URGENT SHIFTS PANEL -->
+                    <div class="tab-pane fade" id="urgent-panel" role="tabpanel" aria-labelledby="urgent-tab">
+                        {% if urgent_jobs %}
+                            {% for job in urgent_jobs %}
+                                {% include 'students/includes/job_card.html' with job=job %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-lightning-charge text-muted display-4"></i>
+                                <p class="text-muted mt-3">No urgent hiring shifts found currently.</p>
+                            </div>
+                        {% endif %}
                     </div>
-                {% endif %}
+
+                    <!-- 3. REMOTE SHIFTS PANEL -->
+                    <div class="tab-pane fade" id="remote-panel" role="tabpanel" aria-labelledby="remote-tab">
+                        {% if remote_jobs %}
+                            {% for job in remote_jobs %}
+                                {% include 'students/includes/job_card.html' with job=job %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-laptop text-muted display-4"></i>
+                                <p class="text-muted mt-3">No remote shifts found currently.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 4. RECOMMENDED SHIFTS PANEL -->
+                    <div class="tab-pane fade" id="recommended-panel" role="tabpanel" aria-labelledby="recommended-tab">
+                        {% if recommended_jobs %}
+                            {% for job in recommended_jobs %}
+                                {% include 'students/includes/job_card.html' with job=job %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-stars text-muted display-4"></i>
+                                <p class="text-muted mt-3">No recommended shifts found currently.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 5. NEWLY POSTED PANEL -->
+                    <div class="tab-pane fade" id="newly-panel" role="tabpanel" aria-labelledby="newly-tab">
+                        {% if newly_posted_jobs %}
+                            {% for job in newly_posted_jobs %}
+                                {% include 'students/includes/job_card.html' with job=job %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-clock-history text-muted display-4"></i>
+                                <p class="text-muted mt-3">No new shifts posted recently.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- RECENT PAYMENTS -->
-        <div class="col-lg-5">
+        <div class="col-lg-4">
             <div class="dash-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="text-white mb-0"><i class="bi bi-receipt-cutoff text-primary"></i> Recent Earnings</h5>

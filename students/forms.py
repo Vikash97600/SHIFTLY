@@ -10,6 +10,9 @@ class StudentProfileForm(forms.ModelForm):
             'bio', 
             'hourly_rate_expectation', 
             'availability_status', 
+            'preferred_location',
+            'latitude',
+            'longitude',
             'resume', 
             'portfolio_file'
         ]
@@ -34,6 +37,23 @@ class StudentProfileForm(forms.ModelForm):
             }),
             'availability_status': forms.Select(attrs={
                 'class': 'form-select bg-dark border-secondary text-light'
+            }),
+            'preferred_location': forms.TextInput(attrs={
+                'class': 'form-control bg-dark border-secondary text-light',
+                'placeholder': 'Enter preferred city or address',
+                'id': 'id_preferred_location'
+            }),
+            'latitude': forms.NumberInput(attrs={
+                'class': 'form-control bg-dark border-secondary text-light',
+                'step': '0.000001',
+                'placeholder': 'e.g. 12.9716',
+                'id': 'id_latitude'
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'class': 'form-control bg-dark border-secondary text-light',
+                'step': '0.000001',
+                'placeholder': 'e.g. 77.5946',
+                'id': 'id_longitude'
             }),
             'resume': forms.ClearableFileInput(attrs={
                 'class': 'form-control bg-dark border-secondary text-light'

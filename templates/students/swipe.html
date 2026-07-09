@@ -40,9 +40,43 @@
 
 {% block content %}
 <div class="container-fluid p-0">
-    <div class="text-center mb-5">
+    <div class="text-center mb-4">
         <h1 class="text-white mb-1">Swipe Shifts</h1>
         <p class="text-muted mb-0">Use <strong>Arrow Keys</strong> (← Nope, ↑ Save, → Like) or drag the card directly!</p>
+    </div>
+
+    <!-- SEARCH & FILTERS PANEL -->
+    <div class="dash-card p-4 mb-4 mx-auto" style="max-width: 380px;">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-6">
+                <label class="form-label text-muted small" style="font-size: 0.75rem;"><i class="bi bi-geo-alt-fill text-danger small"></i> Distance</label>
+                <select name="radius" class="form-select bg-dark border-secondary text-light py-1.5" style="font-size: 0.8rem;">
+                    <option value="" {% if not request.GET.radius %}selected{% endif %}>Any Dist.</option>
+                    <option value="2.00" {% if request.GET.radius == "2.00" %}selected{% endif %}>2 KM</option>
+                    <option value="5.00" {% if request.GET.radius == "5.00" %}selected{% endif %}>5 KM</option>
+                    <option value="10.00" {% if request.GET.radius == "10.00" %}selected{% endif %}>10 KM</option>
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label text-muted small" style="font-size: 0.75rem;"><i class="bi bi-globe text-success small"></i> Mode</label>
+                <select name="remote_only" class="form-select bg-dark border-secondary text-light py-1.5" style="font-size: 0.8rem;">
+                    <option value="" {% if not request.GET.remote_only %}selected{% endif %}>All Modes</option>
+                    <option value="true" {% if request.GET.remote_only == "true" %}selected{% endif %}>Remote</option>
+                </select>
+            </div>
+            <div class="col-6 d-flex align-items-center mb-1">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="filterUrgent" name="urgent" value="true" {% if request.GET.urgent == "true" %}checked{% endif %}>
+                    <label class="form-check-label text-white" for="filterUrgent" style="font-size: 0.75rem;">🚨 Urgent</label>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="d-flex gap-1.5" style="gap: 5px;">
+                    <button type="submit" class="btn btn-premium-coral btn-sm w-100 py-1.5" style="font-size: 0.8rem;"><i class="bi bi-filter"></i> Filter</button>
+                    <a href="{% url 'student_swipe' %}" class="btn btn-premium-outline btn-sm py-1.5 px-2.5" style="font-size: 0.8rem;"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </div>
+        </form>
     </div>
 
     <!-- SWIPER MODULE CONTAINER -->
@@ -55,8 +89,8 @@
                      data-company="{{ job.business.company_name }}"
                      data-company-logo="{{ job.business.company_logo_url|default:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=400&q=80' }}"
                      data-location="{{ job.location_name }}"
-                     data-pay="₹{{ job.base_pay }}<small class='fs-6 fw-normal text-muted'>/hr</small>"
-                     data-work-type="{{ job.work_type|capfirst }}"
+                     data-pay="₹{{ job.base_pay }}<small class='fs-6 fw-normal text-muted'>/Shift</small>"
+                     data-work-type="{{ job.job_mode|capfirst }}"
                      data-dates="{{ job.start_date }} to {{ job.end_date }}"
                      data-time="{{ job.shift_start_time }} - {{ job.shift_end_time }}"
                      data-description="{{ job.description }}"
@@ -67,6 +101,11 @@
                      data-payment-reliability="{{ job.business.reputation.payment_timeliness_rate|default:'100.00' }}%"
                      data-accuracy-rate="{{ job.business.reputation.job_accuracy_rate|default:'100.00' }}%"
                      data-cancel-rate="{{ job.business.reputation.cancellation_rate|default:'0.00' }}%"
+                     data-distance-display="{{ job.distance_display }}"
+                     data-travel-time="{{ job.travel_time|default_if_none:'' }}"
+                     data-hiring-radius="{% if job.job_mode == 'remote' %}Remote{% else %}{{ job.hiring_radius|floatformat:0 }} KM{% endif %}"
+                     data-is-urgent="{% if job.is_urgent %}true{% else %}false{% endif %}"
+                     data-job-mode="{{ job.job_mode }}"
                      style="{% if not forloop.first %}transform: scale(0.95) translateY(12px); opacity: 0.7; z-index: 1;{% else %}z-index: 2;{% endif %}">
                     
                     <div class="swipe-card-image" style="background-image: url('{{ job.business.company_logo_url|default:'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=400&q=80' }}')">
@@ -77,14 +116,33 @@
                     
                     <div class="swipe-card-body">
                         <div>
-                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                <h4 class="mb-0 fs-5">{{ job.title }}</h4>
-                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1 fs-6">
-                                    {{ job.work_type|capfirst }}
-                                </span>
+                            <div class="d-flex justify-content-between align-items-start mb-1" style="gap: 5px;">
+                                <h4 class="mb-0 fs-5 text-truncate" style="max-width: 70%;" title="{{ job.title }}">{{ job.title }}</h4>
+                                <div class="d-flex flex-wrap gap-1 align-items-center" style="gap: 3px;">
+                                    {% if job.is_urgent %}
+                                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-20 rounded-pill px-1.5 py-0.5" style="font-size: 0.65rem;">Urgent</span>
+                                    {% endif %}
+                                    {% if job.job_mode == 'remote' %}
+                                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-20 rounded-pill px-1.5 py-0.5" style="font-size: 0.65rem;">Remote</span>
+                                    {% else %}
+                                        <span class="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-20 rounded-pill px-1.5 py-0.5" style="font-size: 0.65rem;">On-site</span>
+                                    {% endif %}
+                                </div>
                             </div>
                             <p class="text-muted mb-1">{{ job.business.company_name }} <span class="text-gradient-coral fw-semibold small">{{ job.business.reputation.trust_badge|default:"👑 Elite Employer" }}</span></p>
-                            <p class="text-muted mb-2"><i class="bi bi-geo-alt-fill text-danger"></i> {{ job.location_name }}</p>
+                            <p class="text-muted mb-2 small">
+                                {% if job.job_mode == 'remote' %}
+                                    <span class="text-success fw-bold"><i class="bi bi-globe"></i> Remote Job</span>
+                                {% else %}
+                                    <i class="bi bi-geo-alt-fill text-danger"></i> {{ job.location_name|truncatechars:20 }}
+                                    <span class="mx-1 text-secondary">•</span> 
+                                    <strong>{{ job.distance_display }}</strong>
+                                    {% if job.travel_time %}
+                                        <span class="mx-1 text-secondary">•</span> 
+                                        <strong>{{ job.travel_time }}</strong>
+                                    {% endif %}
+                                {% endif %}
+                            </p>
                             <small class="d-block text-white mb-2"><i class="bi bi-calendar3"></i> {{ job.start_date }} ({{ job.shift_start_time }} - {{ job.shift_end_time }})</small>
                             
                             <!-- Skill Badges Required -->
@@ -174,6 +232,11 @@
                         <div class="p-3 bg-secondary bg-opacity-10 rounded-3 border border-secondary border-opacity-10">
                             <h6 class="text-muted small mb-2"><i class="bi bi-geo-alt-fill text-danger"></i> Location</h6>
                             <p class="text-white mb-0 fw-medium" id="modal-detail-location"></p>
+                            <!-- Distance & Commute info inside modal details -->
+                            <div id="modal-detail-commute-info" class="mt-2 pt-2 border-top border-secondary border-opacity-10 small text-light d-none">
+                                <span id="modal-detail-distance-display"></span> • <span id="modal-detail-travel-time"></span>
+                                <div class="text-info mt-1" style="font-size: 0.8rem;" id="modal-detail-radius-display"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -484,12 +547,55 @@
             const slots = card.getAttribute("data-slots");
             const skillsStr = card.getAttribute("data-skills") || "";
 
+            const isUrgent = card.getAttribute("data-is-urgent") === "true";
+            const jobMode = card.getAttribute("data-job-mode");
+            const distanceDisplay = card.getAttribute("data-distance-display");
+            const travelTime = card.getAttribute("data-travel-time");
+            const hiringRadius = card.getAttribute("data-hiring-radius");
+
             document.getElementById("modal-detail-title").innerText = title;
             document.getElementById("modal-detail-company").innerText = company;
             document.getElementById("modal-detail-logo").src = logo;
             document.getElementById("modal-detail-location").innerText = location;
             document.getElementById("modal-detail-pay").innerHTML = pay;
-            document.getElementById("modal-detail-worktype").innerText = workType;
+            
+            // Set Job Mode Badge styling
+            const workTypeBadge = document.getElementById("modal-detail-worktype");
+            workTypeBadge.className = "badge rounded-pill px-2.5 py-1";
+            if (jobMode === 'remote') {
+                workTypeBadge.innerText = "🌐 Remote";
+                workTypeBadge.classList.add("bg-success", "bg-opacity-10", "text-success");
+            } else {
+                workTypeBadge.innerText = "On-site";
+                workTypeBadge.classList.add("bg-primary", "bg-opacity-10", "text-primary");
+            }
+
+            // Set/Check Urgent Badge
+            let urgentBadge = document.getElementById("modal-detail-urgent-badge");
+            if (!urgentBadge) {
+                urgentBadge = document.createElement("span");
+                urgentBadge.id = "modal-detail-urgent-badge";
+                urgentBadge.className = "badge bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1 ms-2";
+                urgentBadge.innerText = "🚨 Urgent";
+                workTypeBadge.parentNode.appendChild(urgentBadge);
+            }
+            if (isUrgent) {
+                urgentBadge.classList.remove("d-none");
+            } else {
+                urgentBadge.classList.add("d-none");
+            }
+
+            // Set Commute/Distance section
+            const commuteWrapper = document.getElementById("modal-detail-commute-info");
+            if (jobMode === 'remote') {
+                commuteWrapper.classList.add("d-none");
+            } else {
+                commuteWrapper.classList.remove("d-none");
+                document.getElementById("modal-detail-distance-display").innerText = distanceDisplay;
+                document.getElementById("modal-detail-travel-time").innerText = travelTime || "";
+                document.getElementById("modal-detail-radius-display").innerHTML = `<i class="bi bi-radar"></i> Within Hiring Radius (${hiringRadius})`;
+            }
+
             document.getElementById("modal-detail-timing").innerText = time;
             document.getElementById("modal-detail-dates").innerText = dates;
             document.getElementById("modal-detail-description").innerText = description;

@@ -37,6 +37,86 @@ class StudentRequiredMixin(LoginRequiredMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+from django.db.models import Q, F
+from jobs.models import HaversineDistance
+
+def get_travel_time(distance):
+    if distance is None:
+        return None
+    distance = float(distance)
+    if distance <= 1.5:
+        time_min = max(1, int(round(distance * 12)))  # walking (12 min/km)
+        return f"🚶 {time_min} min"
+    else:
+        time_min = max(1, int(round(distance * 2.5)))  # scooter (2.5 min/km)
+        return f"🛵 {time_min} min"
+
+
+def get_visible_jobs_for_student(student_profile, get_params):
+    has_coords = student_profile.latitude is not None and student_profile.longitude is not None
+    swiped_ids = Swipe.objects.filter(student=student_profile).values_list('job_id', flat=True)
+    
+    # Start with active, non-swiped jobs
+    qs = JobPosting.objects.filter(status='active').exclude(id__in=swiped_ids)
+    
+    # Annotate with distance if coords exist
+    if has_coords:
+        qs = qs.annotate(
+            distance=HaversineDistance(
+                F('latitude'), F('longitude'),
+                student_profile.latitude, student_profile.longitude
+            )
+        )
+        # Standard Visibility Filter: (Remote) OR (Onsite AND student distance <= job hiring radius)
+        qs = qs.filter(
+            Q(job_mode='remote') | Q(job_mode='onsite', distance__lte=F('hiring_radius'))
+        )
+    else:
+        # If no coords, only Remote jobs are visible
+        qs = qs.filter(job_mode='remote')
+        
+    # Apply search filters from get_params
+    radius_filter = get_params.get('radius')
+    remote_only = get_params.get('remote_only') == 'true'
+    sort_by = get_params.get('sort')
+    urgent_only = get_params.get('urgent') == 'true'
+    
+    if remote_only:
+        qs = qs.filter(job_mode='remote')
+    elif radius_filter and has_coords:
+        try:
+            r_val = float(radius_filter)
+            qs = qs.filter(job_mode='onsite', distance__lte=r_val)
+        except ValueError:
+            pass
+            
+    if urgent_only:
+        qs = qs.filter(is_urgent=True)
+        
+    if sort_by == 'salary':
+        qs = qs.order_by('-base_pay', '-created_at')
+    elif sort_by == 'newest':
+        qs = qs.order_by('-created_at')
+        
+    return qs
+
+
+def attach_job_distance_metadata(jobs_list, has_coords):
+    for job in jobs_list:
+        if job.job_mode == 'remote':
+            job.distance_display = "Remote"
+            job.travel_time = None
+        else:
+            dist = getattr(job, 'distance', None)
+            if dist is not None:
+                job.distance_display = f"{dist:.1f} km"
+                job.travel_time = get_travel_time(dist)
+            else:
+                job.distance_display = "Unknown"
+                job.travel_time = None
+    return jobs_list
+
+
 class StudentDashboardView(StudentRequiredMixin, TemplateView):
     template_name = 'students/dashboard.html'
 
@@ -50,9 +130,45 @@ class StudentDashboardView(StudentRequiredMixin, TemplateView):
         active_apps = JobApplication.objects.filter(student=profile).exclude(status__in=['accepted', 'closed', 'rejected', 'withdrawn']).count()
         matches_count = Match.objects.filter(student=profile, status__in=['active', 'hired']).count()
 
-        # Recommended Jobs (Active job postings that the student hasn't swiped on yet, ordered by business reputation)
-        swiped_job_ids = Swipe.objects.filter(student=profile).values_list('job_id', flat=True)
-        recommended_jobs = JobPosting.objects.filter(status='active').exclude(id__in=swiped_job_ids).select_related('business').order_by('-business__reputation_score', '-created_at')[:5]
+        # Get all visible jobs according to rules & filters
+        visible_jobs = get_visible_jobs_for_student(profile, self.request.GET)
+        has_coords = profile.latitude is not None and profile.longitude is not None
+
+        # 1. Nearby Jobs: onsite jobs, closest first (unless sorted otherwise)
+        sort_by = self.request.GET.get('sort')
+        nearby_qs = visible_jobs.filter(job_mode='onsite')
+        if not sort_by and has_coords:
+            nearby_qs = nearby_qs.order_by('distance')
+        nearby_jobs = list(nearby_qs.select_related('business')[:10])
+        attach_job_distance_metadata(nearby_jobs, has_coords)
+
+        # 2. Urgent Hiring: marked as urgent
+        urgent_qs = visible_jobs.filter(is_urgent=True)
+        if not sort_by:
+            urgent_qs = urgent_qs.order_by('-created_at')
+        urgent_jobs = list(urgent_qs.select_related('business')[:10])
+        attach_job_distance_metadata(urgent_jobs, has_coords)
+
+        # 3. Remote Jobs: job mode is remote
+        remote_qs = visible_jobs.filter(job_mode='remote')
+        if not sort_by:
+            remote_qs = remote_qs.order_by('-created_at')
+        remote_jobs = list(remote_qs.select_related('business')[:10])
+        attach_job_distance_metadata(remote_jobs, has_coords)
+
+        # 4. Recommended Jobs: ordered by business reputation
+        rec_qs = visible_jobs
+        if not sort_by:
+            rec_qs = rec_qs.order_by('-business__reputation_score', '-created_at')
+        recommended_jobs = list(rec_qs.select_related('business')[:10])
+        attach_job_distance_metadata(recommended_jobs, has_coords)
+
+        # 5. Newly Posted: latest first
+        new_qs = visible_jobs
+        if not sort_by:
+            new_qs = new_qs.order_by('-created_at')
+        new_jobs = list(new_qs.select_related('business')[:10])
+        attach_job_distance_metadata(new_jobs, has_coords)
 
         # Recent Earnings
         recent_earnings = Earning.objects.filter(student=profile).order_by('-created_at')[:5]
@@ -63,7 +179,11 @@ class StudentDashboardView(StudentRequiredMixin, TemplateView):
             'total_earnings': total_earnings,
             'active_applications_count': active_apps,
             'matches_count': matches_count,
+            'nearby_jobs': nearby_jobs,
+            'urgent_jobs': urgent_jobs,
+            'remote_jobs': remote_jobs,
             'recommended_jobs': recommended_jobs,
+            'newly_posted_jobs': new_jobs,
             'recent_earnings': recent_earnings,
             'unread_notifications_count': Notification.objects.filter(user=self.request.user, is_read=False).count(),
         })
@@ -122,9 +242,12 @@ class SwipeConsoleView(StudentRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         profile = get_object_or_404(StudentProfile, user=self.request.user)
         
-        # Pull active jobs the student hasn't swiped on yet
-        swiped_ids = Swipe.objects.filter(student=profile).values_list('job_id', flat=True)
-        jobs = JobPosting.objects.filter(status='active').exclude(id__in=swiped_ids).select_related('business__reputation').prefetch_related('required_skills__skill')
+        visible_qs = get_visible_jobs_for_student(profile, self.request.GET)
+        jobs = visible_qs.select_related('business__reputation').prefetch_related('required_skills__skill')
+        
+        has_coords = profile.latitude is not None and profile.longitude is not None
+        jobs = list(jobs)
+        attach_job_distance_metadata(jobs, has_coords)
         
         context.update({
             'profile': profile,

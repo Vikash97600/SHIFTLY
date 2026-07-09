@@ -44,6 +44,28 @@
                             {{ form.availability_status.errors }}
                         </div>
 
+                        <div class="col-12">
+                            <label class="form-label text-muted">Preferred Work Location Name / Address</label>
+                            <div class="input-group">
+                                {{ form.preferred_location }}
+                                <button type="button" class="btn btn-premium-indigo px-4" id="detect-location-btn">
+                                    <i class="bi bi-geo-alt-fill"></i> Detect Location
+                                </button>
+                            </div>
+                            {{ form.preferred_location.errors }}
+                            <small class="text-muted">Type in your preferred city/address, or click 'Detect Location' to auto-detect using GPS.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Latitude</label>
+                            {{ form.latitude }}
+                            {{ form.latitude.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Longitude</label>
+                            {{ form.longitude }}
+                            {{ form.longitude.errors }}
+                        </div>
+
                         <!-- Resume Upload -->
                         <div class="col-md-6">
                             <label class="form-label text-muted">Resume (PDF, DOCX)</label>
@@ -599,6 +621,42 @@ document.addEventListener("DOMContentLoaded", () => {
             const checked = optContrast.checked;
             localStorage.setItem("shiftly_contrast", checked);
             document.documentElement.setAttribute("data-contrast", checked.toString());
+        });
+    }
+
+    // Geolocation detector
+    const detectBtn = document.getElementById("detect-location-btn");
+    if (detectBtn) {
+        detectBtn.addEventListener("click", () => {
+            if (navigator.geolocation) {
+                detectBtn.disabled = true;
+                detectBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Detecting...`;
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        document.getElementById("id_latitude").value = lat.toFixed(6);
+                        document.getElementById("id_longitude").value = lon.toFixed(6);
+                        document.getElementById("id_preferred_location").value = `My Current Location (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+                        
+                        detectBtn.disabled = false;
+                        detectBtn.innerHTML = `<i class="bi bi-check-circle-fill"></i> Detected!`;
+                        setTimeout(() => {
+                            detectBtn.innerHTML = `<i class="bi bi-geo-alt-fill"></i> Detect Location`;
+                        }, 3000);
+                    },
+                    (error) => {
+                        console.error(error);
+                        alert("Error retrieving geolocation: " + error.message);
+                        detectBtn.disabled = false;
+                        detectBtn.innerHTML = `<i class="bi bi-geo-alt-fill"></i> Detect Location`;
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
         });
     }
 });
