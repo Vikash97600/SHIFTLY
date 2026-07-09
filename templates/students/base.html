@@ -126,6 +126,9 @@
                 <a href="{% url 'student_notifications' %}" class="sidebar-link {% if request.resolver_match.url_name == 'student_notifications' %}active{% endif %}">
                     <i class="bi bi-bell-fill"></i> Notifications
                 </a>
+                <a href="{% url 'user_queries' %}" class="sidebar-link {% if request.resolver_match.url_name == 'user_queries' or request.resolver_match.url_name == 'user_query_chat' %}active{% endif %}">
+                    <i class="bi bi-chat-square-quote-fill"></i> Query Responses
+                </a>
                 <a href="{% url 'student_profile_edit' %}#appearance" class="sidebar-link {% if request.resolver_match.url_name == 'student_profile_edit' %}active{% endif %}">
                     <i class="bi bi-palette-fill"></i> Appearance
                 </a>

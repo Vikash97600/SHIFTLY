@@ -21,7 +21,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from accounts.views import (
     LandingPageView, LoginPageView, RegisterPageView,
-    AboutPageView, ContactPageView, LogoutPageView
+    AboutPageView, ContactPageView, LogoutPageView,
+    UserQueriesView, UserQueryChatView
 )
 
 urlpatterns = [
@@ -31,6 +32,8 @@ urlpatterns = [
     path("about/", AboutPageView.as_view(), name="about_page"),
     path("contact/", ContactPageView.as_view(), name="contact_page"),
     path("logout/", LogoutPageView.as_view(), name="logout_page"),
+    path("queries/", UserQueriesView.as_view(), name="user_queries"),
+    path("queries/<int:query_id>/", UserQueryChatView.as_view(), name="user_query_chat"),
 
     path("admin/", admin.site.urls),
     path("api/v1/accounts/", include("accounts.urls")),

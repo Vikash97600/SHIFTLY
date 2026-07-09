@@ -114,3 +114,27 @@ class Verification(models.Model):
 
     def __str__(self):
         return f"Verification ({self.user.email} - {self.status})"
+
+
+class UserQuery(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='queries')
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    subject = models.CharField(max_length=150)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_resolved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Query from {self.email}: {self.subject}"
+
+
+class QueryMessage(models.Model):
+    query = models.ForeignKey(UserQuery, on_delete=models.CASCADE, related_name='chat_messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Message from {self.sender.email} at {self.created_at}"
+

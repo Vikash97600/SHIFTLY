@@ -362,3 +362,156 @@ class HTMLAuthenticationTests(TestCase):
         dashboard_response = self.client.get(reverse('student_dashboard'))
         self.assertRedirects(dashboard_response, f"{reverse('login_page')}?next={reverse('student_dashboard')}")
 
+
+from django.test import TestCase, Client
+from accounts.models import UserQuery, QueryMessage
+
+class UserQueryTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        self.student_user = User.objects.create_user(
+            email="student@queries.com",
+            password="testpass123",
+            role="student"
+        )
+        StudentProfile.objects.create(
+            user=self.student_user,
+            first_name="Query",
+            last_name="Tester"
+        )
+
+        self.admin_user = User.objects.create_user(
+            email="admin@queries.com",
+            password="testpass123",
+            role="admin",
+            is_staff=True
+        )
+
+    def test_contact_form_creates_userquery_linked_to_user(self):
+        """
+        Submitting the contact form with a registered email should
+        create a UserQuery linked to that user account.
+        """
+        response = self.client.post(reverse('contact_page'), {
+            'name': 'Query Tester',
+            'email': 'student@queries.com',
+            'subject': 'Wallet query',
+            'message': 'How do I withdraw earnings?',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(UserQuery.objects.filter(email='student@queries.com').exists())
+        query = UserQuery.objects.get(email='student@queries.com')
+        self.assertEqual(query.user, self.student_user)
+
+    def test_contact_form_creates_anonymous_query_for_unregistered_email(self):
+        """
+        Contact form with an unknown email creates a query with no linked user.
+        """
+        response = self.client.post(reverse('contact_page'), {
+            'name': 'Anonymous Person',
+            'email': 'nobody@example.com',
+            'subject': 'General question',
+            'message': 'What is SHIFTLY?',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        query = UserQuery.objects.get(email='nobody@example.com')
+        self.assertIsNone(query.user)
+
+    def test_user_queries_list_requires_login(self):
+        """
+        Unauthenticated users are redirected away from the queries list.
+        """
+        response = self.client.get(reverse('user_queries'))
+        self.assertEqual(response.status_code, 302)
+
+    def test_user_queries_list_shows_own_queries(self):
+        """
+        Logged-in users can see their own queries.
+        """
+        query = UserQuery.objects.create(
+            user=self.student_user,
+            name='Query Tester',
+            email='student@queries.com',
+            subject='Badge query',
+            message='How do badges work?'
+        )
+        self.client.login(email='student@queries.com', password='testpass123')
+        response = self.client.get(reverse('user_queries'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(query, response.context['queries'])
+
+    def test_user_can_post_reply_in_query_chat(self):
+        """
+        A logged-in user can post a reply message in the support chat.
+        """
+        query = UserQuery.objects.create(
+            user=self.student_user,
+            name='Query Tester',
+            email='student@queries.com',
+            subject='Earnings question',
+            message='How are my earnings calculated?'
+        )
+        self.client.login(email='student@queries.com', password='testpass123')
+        self.client.post(reverse('user_query_chat', args=[query.id]), {
+            'message': 'Please clarify the platform fee.'
+        })
+        self.assertTrue(QueryMessage.objects.filter(query=query, sender=self.student_user).exists())
+
+    def test_admin_can_view_all_queries(self):
+        """
+        Admin can view all user queries regardless of who submitted them.
+        """
+        UserQuery.objects.create(
+            user=self.student_user,
+            name='Query Tester',
+            email='student@queries.com',
+            subject='Test query',
+            message='Test message'
+        )
+        self.client.login(email='admin@queries.com', password='testpass123')
+        response = self.client.get(reverse('admin_queries'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['queries'].count(), 1)
+
+    def test_admin_can_reply_to_query(self):
+        """
+        Admin can post a reply to a user query and it appears in the thread.
+        """
+        query = UserQuery.objects.create(
+            user=self.student_user,
+            name='Query Tester',
+            email='student@queries.com',
+            subject='Admin reply test',
+            message='Need help!'
+        )
+        self.client.login(email='admin@queries.com', password='testpass123')
+        self.client.post(reverse('admin_query_chat', args=[query.id]), {
+            'message': 'We are looking into this for you!'
+        })
+        self.assertTrue(
+            QueryMessage.objects.filter(
+                query=query,
+                sender=self.admin_user,
+                message='We are looking into this for you!'
+            ).exists()
+        )
+
+    def test_admin_can_mark_query_resolved(self):
+        """
+        Submitting the resolve button sets the query to resolved.
+        """
+        query = UserQuery.objects.create(
+            user=self.student_user,
+            name='Query Tester',
+            email='student@queries.com',
+            subject='Resolve test',
+            message='Please resolve this!'
+        )
+        self.client.login(email='admin@queries.com', password='testpass123')
+        self.client.post(reverse('admin_query_chat', args=[query.id]), {
+            'message': '',
+            'resolve': '1'
+        })
+        query.refresh_from_db()
+        self.assertTrue(query.is_resolved)

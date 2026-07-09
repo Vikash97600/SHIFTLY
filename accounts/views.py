@@ -276,7 +276,29 @@ class ContactPageView(View):
     def post(self, request):
         form = ContactForm(request.POST)
         if form.is_valid():
-            # In a real app, send mail or store in database:
+            name = form.cleaned_data['name']
+            email = form.cleaned_data['email']
+            subject = form.cleaned_data['subject']
+            message = form.cleaned_data['message']
+
+            user = None
+            if request.user.is_authenticated and request.user.email == email:
+                user = request.user
+            else:
+                try:
+                    user = User.objects.get(email=email)
+                except User.DoesNotExist:
+                    pass
+
+            from accounts.models import UserQuery
+            UserQuery.objects.create(
+                user=user,
+                name=name,
+                email=email,
+                subject=subject,
+                message=message
+            )
+
             messages.success(request, "Thank you for reaching out! We've received your message and will respond shortly.")
             return redirect('contact_page')
         return render(request, self.template_name, {'form': form})
@@ -287,4 +309,81 @@ class LogoutPageView(View):
         auth_logout(request)
         messages.success(request, "You have been logged out.")
         return redirect('landing')
+
+
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.mixins import LoginRequiredMixin
+from accounts.models import UserQuery, QueryMessage
+
+class UserQueriesView(LoginRequiredMixin, View):
+    template_name = 'accounts/user_queries.html'
+
+    def get(self, request):
+        profile = None
+        base_template = 'students/base.html'
+        if request.user.role == 'student':
+            from students.models import StudentProfile
+            profile = StudentProfile.objects.filter(user=request.user).first()
+            base_template = 'students/base.html'
+        elif request.user.role == 'business':
+            from businesses.models import BusinessProfile
+            profile = BusinessProfile.objects.filter(user=request.user).first()
+            base_template = 'businesses/base.html'
+
+        queries = UserQuery.objects.filter(Q(user=request.user) | Q(email=request.user.email)).order_by('-created_at')
+
+        context = {
+            'profile': profile,
+            'base_template': base_template,
+            'queries': queries,
+        }
+        return render(request, self.template_name, context)
+
+
+class UserQueryChatView(LoginRequiredMixin, View):
+    template_name = 'accounts/user_query_chat.html'
+
+    def get_query(self, request, query_id):
+        return get_object_or_404(UserQuery, Q(user=request.user) | Q(email=request.user.email), id=query_id)
+
+    def get(self, request, query_id):
+        query = self.get_query(request, query_id)
+        
+        profile = None
+        base_template = 'students/base.html'
+        if request.user.role == 'student':
+            from students.models import StudentProfile
+            profile = StudentProfile.objects.filter(user=request.user).first()
+            base_template = 'students/base.html'
+        elif request.user.role == 'business':
+            from businesses.models import BusinessProfile
+            profile = BusinessProfile.objects.filter(user=request.user).first()
+            base_template = 'businesses/base.html'
+
+        messages_list = query.chat_messages.all().order_by('created_at')
+
+        context = {
+            'profile': profile,
+            'base_template': base_template,
+            'query': query,
+            'chat_messages': messages_list,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, query_id):
+        query = self.get_query(request, query_id)
+        message_text = request.POST.get('message', '').strip()
+        if message_text:
+            QueryMessage.objects.create(
+                query=query,
+                sender=request.user,
+                message=message_text
+            )
+            if not query.user:
+                query.user = request.user
+                query.save(update_fields=['user'])
+                
+        return redirect('user_query_chat', query_id=query.id)
+
 

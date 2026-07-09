@@ -124,6 +124,9 @@
                 <a href="{% url 'business_profile_edit' %}" class="sidebar-link {% if request.resolver_match.url_name == 'business_profile_edit' %}active{% endif %}">
                     <i class="bi bi-gear-fill"></i> Company Settings
                 </a>
+                <a href="{% url 'user_queries' %}" class="sidebar-link {% if request.resolver_match.url_name == 'user_queries' or request.resolver_match.url_name == 'user_query_chat' %}active{% endif %}">
+                    <i class="bi bi-chat-square-quote-fill"></i> Query Responses
+                </a>
                 <a href="{% url 'business_profile_edit' %}#appearance" class="sidebar-link {% if request.resolver_match.url_name == 'business_profile_edit' %}active{% endif %}">
                     <i class="bi bi-palette-fill"></i> Appearance
                 </a>

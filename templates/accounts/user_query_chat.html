@@ -1,0 +1,118 @@
+{% extends base_template %}
+
+{% block title %}Query Chat - SHIFTLY{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Back to queries -->
+    <div class="mb-4">
+        <a href="{% url 'user_queries' %}" class="text-decoration-none text-muted small fw-semibold">
+            <i class="bi bi-arrow-left"></i> Back to Queries
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Query Details Sidebar -->
+        <div class="col-lg-4">
+            <div class="dash-card p-4 h-100">
+                <span class="badge {% if query.is_resolved %}bg-success{% else %}bg-warning{% endif %} bg-opacity-10 text-{% if query.is_resolved %}success{% else %}warning{% endif %} px-2.5 py-1.5 rounded-pill mb-3">
+                    {% if query.is_resolved %}Resolved{% else %}Active Thread{% endif %}
+                </span>
+                <h3 class="text-white mb-2">{{ query.subject }}</h3>
+                <p class="text-muted small mb-4">Submitted on {{ query.created_at|date:"M d, Y H:i" }}</p>
+
+                <div class="border-top border-secondary border-opacity-10 pt-4">
+                    <label class="form-label text-muted small uppercase fw-bold">Original Query Message</label>
+                    <div class="p-3 bg-dark bg-opacity-30 rounded-3 border border-secondary border-opacity-10 text-light small" style="white-space: pre-wrap;">{{ query.message }}</div>
+                </div>
+
+                <div class="border-top border-secondary border-opacity-10 pt-4 mt-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-envelope text-muted"></i>
+                        <span class="text-muted small">{{ query.email }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Console -->
+        <div class="col-lg-8">
+            <div class="dash-card d-flex flex-column" style="height: 600px;">
+                <!-- Header -->
+                <div class="p-4 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-premium-coral bg-opacity-10 text-premium-coral rounded-circle p-2.5">
+                            <i class="bi bi-shield-fill-check"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-white mb-0">SHIFTLY Support Agent</h5>
+                            <small class="text-muted">Administrator Chat</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="flex-grow-1 p-4 overflow-y-auto d-flex flex-column gap-3" id="chat-messages-container">
+                    <!-- Initial System Message -->
+                    <div class="d-flex justify-content-center my-2">
+                        <span class="badge bg-secondary bg-opacity-10 text-muted px-3 py-1.5 rounded-pill small">
+                            Support thread created. Ask anything regarding shift matching, wallets, or reputation scores.
+                        </span>
+                    </div>
+
+                    {% for msg in chat_messages %}
+                        {% if msg.sender.role == 'admin' %}
+                            <!-- Support Response (Left side) -->
+                            <div class="d-flex align-items-start gap-2.5 max-w-75">
+                                <div class="bg-dark bg-opacity-50 text-white p-3 rounded-4 border border-secondary border-opacity-15">
+                                    <p class="mb-1 small" style="white-space: pre-wrap;">{{ msg.message }}</p>
+                                    <div class="text-end">
+                                        <small class="text-muted" style="font-size: 0.7rem;">{{ msg.created_at|date:"H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- User Message (Right side) -->
+                            <div class="d-flex align-items-end gap-2.5 max-w-75 ms-auto">
+                                <div class="bg-premium-coral bg-opacity-10 text-white p-3 rounded-4 border border-premium-coral border-opacity-20">
+                                    <p class="mb-1 small" style="white-space: pre-wrap;">{{ msg.message }}</p>
+                                    <div class="text-end">
+                                        <small class="text-white text-opacity-50" style="font-size: 0.7rem;">{{ msg.created_at|date:"H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% empty %}
+                        <div class="text-center py-5 my-auto">
+                            <i class="bi bi-chat-left-dots text-muted display-4"></i>
+                            <p class="text-muted small mt-2">No messages in this chat yet. The support team will respond here shortly.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Input Footer -->
+                <div class="p-4 border-top border-secondary border-opacity-10">
+                    <form method="POST" action="">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" name="message" class="form-control bg-dark border-secondary border-opacity-20 text-white py-2.5 px-4 rounded-start-pill" placeholder="Type your reply here..." required autocomplete="off">
+                            <button type="submit" class="btn btn-premium-coral px-4 rounded-end-pill">
+                                <i class="bi bi-send-fill"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const container = document.getElementById("chat-messages-container");
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}

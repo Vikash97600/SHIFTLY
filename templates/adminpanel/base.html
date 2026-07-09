@@ -133,6 +133,9 @@
                 <a href="{% url 'admin_reputation' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_reputation' %}active{% endif %}">
                     <i class="bi bi-shield-check"></i> Reputation System
                 </a>
+                <a href="{% url 'admin_queries' %}" class="sidebar-link {% if request.resolver_match.url_name == 'admin_queries' or request.resolver_match.url_name == 'admin_query_chat' %}active{% endif %}">
+                    <i class="bi bi-chat-square-text"></i> User Queries
+                </a>
             </nav>
         </div>
 

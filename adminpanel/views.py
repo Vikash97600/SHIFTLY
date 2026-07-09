@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 
-from accounts.models import Verification, ReputationLog
+from accounts.models import Verification, ReputationLog, UserQuery, QueryMessage
 from accounts.utils import create_account_decision_notification
 from businesses.models import BusinessProfile, Earning
 from students.models import StudentProfile
@@ -746,4 +746,46 @@ class AdminDeleteUserView(AdminRequiredMixin, View):
             return JsonResponse({'error': f'Failed to delete user: {str(e)}'}, status=500)
 
         return JsonResponse({'success': True})
+
+
+class AdminQueriesView(AdminRequiredMixin, ListView):
+    template_name = 'adminpanel/queries.html'
+    context_object_name = 'queries'
+    paginate_by = 25
+
+    def get_queryset(self):
+        return UserQuery.objects.all().order_by('-created_at')
+
+
+class AdminQueryChatView(AdminRequiredMixin, View):
+    template_name = 'adminpanel/query_chat.html'
+
+    def get(self, request, query_id):
+        query = get_object_or_404(UserQuery, id=query_id)
+        messages_list = query.chat_messages.all().order_by('created_at')
+        
+        context = {
+            'query': query,
+            'chat_messages': messages_list,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, query_id):
+        query = get_object_or_404(UserQuery, id=query_id)
+        message_text = request.POST.get('message', '').strip()
+
+        if message_text:
+            QueryMessage.objects.create(
+                query=query,
+                sender=request.user,
+                message=message_text
+            )
+
+        # Always check resolve flag, independent of whether a message was sent
+        if 'resolve' in request.POST:
+            query.is_resolved = True
+            query.save(update_fields=['is_resolved'])
+
+        return redirect('admin_query_chat', query_id=query.id)
+
 
