@@ -137,7 +137,6 @@
             <a href="?tab=approved" class="btn btn-sm btn-outline-success rounded-pill {% if active_tab == 'approved' %}active{% endif %}"><i class="bi bi-building-check"></i> View Approved Businesses</a>
             <a href="?tab=rejected" class="btn btn-sm btn-outline-danger rounded-pill {% if active_tab == 'rejected' %}active{% endif %}"><i class="bi bi-x-octagon"></i> View Rejected Requests</a>
             <button id="scroll-to-list-btn" class="btn btn-sm btn-outline-info rounded-pill"><i class="bi bi-eye"></i> Review Uploaded Documents</button>
-            <a href="{% url 'admin_export_verifications' %}" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bi bi-download"></i> Download Verification Report</a>
         </div>
     </div>
 
@@ -450,7 +449,8 @@
                 imgContainer.classList.add("d-none");
                 unsupported.classList.add("d-none");
 
-                const extension = url.split('.').pop().toLowerCase();
+                const cleanUrl = url.split('?')[0].split('#')[0];
+                const extension = cleanUrl.split('.').pop().toLowerCase();
                 
                 if (extension === 'pdf') {
                     iframe.src = url;

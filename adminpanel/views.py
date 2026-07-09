@@ -5,7 +5,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.db.models import Sum, Q
 from django.utils import timezone
 from django.contrib.auth import get_user_model

@@ -219,3 +219,21 @@ class AdminPanelTests(TestCase):
 
         # Verify audit log
         self.assertTrue(AuditLog.objects.filter(action='report_resolve', target_id=self.report.id).exists())
+
+    def test_export_verifications_csv(self):
+        """
+        Verify that exporting verifications to CSV succeeds and returns the CSV content.
+        """
+        self.client.login(email="admin@shiftly.com", password="password123")
+        url = reverse('admin_export_verifications')
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertEqual(response['Content-Disposition'], 'attachment; filename="verifications_report.csv"')
+        
+        # Verify content
+        content = response.content.decode('utf-8')
+        self.assertIn("Business Name,Owner Name,Email,Mobile", content)
+        self.assertIn("Red Coffee", content)
+

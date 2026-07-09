@@ -231,3 +231,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Media files (uploads)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Security setting to allow rendering media documents/PDFs in iframes on the same origin
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
