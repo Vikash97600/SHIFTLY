@@ -144,12 +144,48 @@ class AdminBusinessApprovalActionView(AdminRequiredMixin, View):
             user.approved_by = request.user
             user.approved_at = timezone.now()
             user.save(update_fields=['status', 'is_active', 'is_verified', 'approved_by', 'approved_at', 'updated_at'])
+
+            profile.status = 'APPROVED'
+            profile.verification_status = 'verified'
+            profile.is_verified = True
+            profile.is_active = True
+            profile.approved_by = request.user
+            profile.approved_at = timezone.now()
+            profile.rejection_reason = ""
+            profile.verification_updated_at = timezone.now()
+            profile.save()
+
+            Verification.objects.filter(user=user, status='pending').update(
+                status='approved',
+                reviewer=request.user,
+                reviewed_at=timezone.now(),
+                rejection_reason=''
+            )
+
             create_account_decision_notification(user, True)
         else:
             user.status = User.AccountStatus.REJECTED
             user.is_active = False
             user.is_verified = False
             user.save(update_fields=['status', 'is_active', 'is_verified', 'updated_at'])
+
+            profile.status = 'REJECTED'
+            profile.verification_status = 'rejected'
+            profile.is_verified = False
+            profile.is_active = False
+            profile.approved_by = request.user
+            profile.approved_at = timezone.now()
+            profile.rejection_reason = reason
+            profile.verification_updated_at = timezone.now()
+            profile.save()
+
+            Verification.objects.filter(user=user, status='pending').update(
+                status='rejected',
+                reviewer=request.user,
+                reviewed_at=timezone.now(),
+                rejection_reason=reason
+            )
+
             create_account_decision_notification(user, False, reason)
 
         AuditLog.objects.create(
@@ -160,7 +196,7 @@ class AdminBusinessApprovalActionView(AdminRequiredMixin, View):
             details={'business': profile.company_name, 'reason': reason},
         )
 
-        return JsonResponse({'success': True, 'status': user.status})
+        return JsonResponse({'success': True, 'status': profile.status})
 
 
 class AdminJobsView(AdminRequiredMixin, ListView):
@@ -174,11 +210,120 @@ class AdminJobsView(AdminRequiredMixin, ListView):
 
 class AdminVerificationsView(AdminRequiredMixin, ListView):
     template_name = 'adminpanel/verifications.html'
-    context_object_name = 'requests'
+    context_object_name = 'businesses'
     paginate_by = 25
 
     def get_queryset(self):
-        return Verification.objects.select_related('user').order_by('-submitted_at')
+        queryset = BusinessProfile.objects.select_related('user', 'approved_by').all()
+
+        search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            queryset = queryset.filter(
+                Q(company_name__icontains=search_query) |
+                Q(owner_name__icontains=search_query) |
+                Q(user__email__icontains=search_query) |
+                Q(mobile_number__icontains=search_query) |
+                Q(business_category__icontains=search_query)
+            )
+
+        filter_type = self.request.GET.get('filter', '').strip()
+        active_tab = self.request.GET.get('tab', 'pending').lower()
+        if active_tab not in ['pending', 'approved', 'rejected']:
+            active_tab = 'pending'
+
+        if filter_type == 'pending':
+            queryset = queryset.filter(status='PENDING')
+        elif filter_type == 'approved':
+            queryset = queryset.filter(status='APPROVED')
+        elif filter_type == 'rejected':
+            queryset = queryset.filter(status='REJECTED')
+        elif filter_type == 'documents_missing':
+            queryset = queryset.filter(
+                Q(business_license='') | Q(business_license__isnull=True) |
+                Q(gst_document='') | Q(gst_document__isnull=True) |
+                Q(tax_document='') | Q(tax_document__isnull=True)
+            )
+        else:
+            queryset = queryset.filter(status=active_tab.upper())
+
+        sort_by = self.request.GET.get('sort', '').strip()
+        if sort_by == 'oldest_pending':
+            queryset = queryset.order_by('created_at')
+        elif sort_by == 'newest_requests':
+            queryset = queryset.order_by('-created_at')
+        elif sort_by == 'recently_registered':
+            queryset = queryset.order_by('-created_at')
+        else:
+            queryset = queryset.order_by('-created_at')
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        pending_count = BusinessProfile.objects.filter(status='PENDING').count()
+        today = timezone.now().date()
+        approved_today_count = BusinessProfile.objects.filter(status='APPROVED', approved_at__date=today).count()
+        
+        rejected_today = BusinessProfile.objects.filter(status='REJECTED', verification_updated_at__date=today).count()
+        rejected_week = BusinessProfile.objects.filter(status='REJECTED', verification_updated_at__gte=timezone.now() - datetime.timedelta(days=7)).count()
+        rejected_month = BusinessProfile.objects.filter(status='REJECTED', verification_updated_at__gte=timezone.now() - datetime.timedelta(days=30)).count()
+        rejected_all_time = BusinessProfile.objects.filter(status='REJECTED').count()
+        
+        pending_businesses = BusinessProfile.objects.filter(status='PENDING')
+        docs_awaiting_review = 0
+        for biz in pending_businesses:
+            if biz.business_license:
+                docs_awaiting_review += 1
+            if biz.gst_document:
+                docs_awaiting_review += 1
+            if biz.tax_document:
+                docs_awaiting_review += 1
+
+        approved_businesses = BusinessProfile.objects.filter(status='APPROVED', approved_at__isnull=False, verification_requested_at__isnull=False)
+        total_approved = approved_businesses.count()
+        if total_approved > 0:
+            durations = []
+            for b in approved_businesses:
+                durations.append(b.approved_at - b.verification_requested_at)
+            total_duration = sum(durations, datetime.timedelta())
+            avg_duration = total_duration / total_approved
+            
+            days = avg_duration.days
+            hours, remainder = divmod(avg_duration.seconds, 3600)
+            minutes, _ = divmod(remainder, 60)
+            
+            if days > 0:
+                avg_time_str = f"{days} Day{'s' if days > 1 else ''} {hours} Hour{'s' if hours != 1 else ''}"
+            elif hours > 0:
+                avg_time_str = f"{hours} Hour{'s' if hours != 1 else ''} {minutes} Minute{'s' if minutes != 1 else ''}"
+            else:
+                avg_time_str = f"{minutes} Minute{'s' if minutes != 1 else ''}"
+        else:
+            avg_time_str = "N/A"
+
+        verified_count = BusinessProfile.objects.filter(status='APPROVED').count()
+
+        active_tab = self.request.GET.get('tab', 'pending').lower()
+        if active_tab not in ['pending', 'approved', 'rejected']:
+            active_tab = 'pending'
+
+        context.update({
+            'pending_count': pending_count,
+            'approved_today_count': approved_today_count,
+            'rejected_today': rejected_today,
+            'rejected_week': rejected_week,
+            'rejected_month': rejected_month,
+            'rejected_all_time': rejected_all_time,
+            'docs_awaiting_review': docs_awaiting_review,
+            'avg_time_str': avg_time_str,
+            'verified_count': verified_count,
+            'active_tab': active_tab,
+            'search_query': self.request.GET.get('search', ''),
+            'filter_type': self.request.GET.get('filter', ''),
+            'sort_by': self.request.GET.get('sort', ''),
+        })
+        return context
 
 
 class AdminReportsView(AdminRequiredMixin, ListView):
@@ -230,13 +375,47 @@ class AdminVerifyRequestActionView(AdminRequiredMixin, View):
         verification.reviewed_at = timezone.now()
         verification.save()
 
-        # If it is a business user, update the BusinessProfile verification_status
         if hasattr(verification.user, 'business_profile'):
             profile = verification.user.business_profile
-            profile.verification_status = 'verified' if action_status == 'approved' else 'rejected'
-            profile.save()
+            user = verification.user
+            
+            if action_status == 'approved':
+                user.status = User.AccountStatus.APPROVED
+                user.is_active = True
+                user.is_verified = True
+                user.approved_by = request.user
+                user.approved_at = timezone.now()
+                user.save(update_fields=['status', 'is_active', 'is_verified', 'approved_by', 'approved_at', 'updated_at'])
 
-        # Audit logging
+                profile.status = 'APPROVED'
+                profile.verification_status = 'verified'
+                profile.is_verified = True
+                profile.is_active = True
+                profile.approved_by = request.user
+                profile.approved_at = timezone.now()
+                profile.rejection_reason = ""
+                profile.verification_updated_at = timezone.now()
+                profile.save()
+
+                create_account_decision_notification(user, True)
+            else:
+                user.status = User.AccountStatus.REJECTED
+                user.is_active = False
+                user.is_verified = False
+                user.save(update_fields=['status', 'is_active', 'is_verified', 'updated_at'])
+
+                profile.status = 'REJECTED'
+                profile.verification_status = 'rejected'
+                profile.is_verified = False
+                profile.is_active = False
+                profile.approved_by = request.user
+                profile.approved_at = timezone.now()
+                profile.rejection_reason = reason
+                profile.verification_updated_at = timezone.now()
+                profile.save()
+
+                create_account_decision_notification(user, False, reason)
+
         AuditLog.objects.create(
             actor=request.user,
             action=f'verification_{action_status}',
@@ -246,6 +425,38 @@ class AdminVerifyRequestActionView(AdminRequiredMixin, View):
         )
 
         return JsonResponse({'success': True, 'status': action_status})
+
+
+class AdminExportVerificationsCSVView(AdminRequiredMixin, View):
+    def get(self, request):
+        import csv
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="verifications_report.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Business Name', 'Owner Name', 'Email', 'Mobile', 
+            'Business Category', 'Address', 'Status', 
+            'Registered At', 'Verified At', 'Approved By', 'Rejection Reason'
+        ])
+        
+        businesses = BusinessProfile.objects.select_related('user', 'approved_by').all().order_by('-created_at')
+        for biz in businesses:
+            writer.writerow([
+                biz.company_name,
+                biz.owner_name or '',
+                biz.user.email,
+                biz.mobile_number or '',
+                biz.business_category or '',
+                biz.address or '',
+                biz.status,
+                biz.created_at.strftime('%Y-%m-%d %H:%M:%S') if biz.created_at else '',
+                biz.approved_at.strftime('%Y-%m-%d %H:%M:%S') if biz.approved_at else '',
+                biz.approved_by.email if biz.approved_by else '',
+                biz.rejection_reason or ''
+            ])
+            
+        return response
 
 
 class AdminJobModerationActionView(AdminRequiredMixin, View):

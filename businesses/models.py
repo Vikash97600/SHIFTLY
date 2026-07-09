@@ -20,6 +20,34 @@ class BusinessProfile(models.Model):
         choices=VerificationStatus.choices, 
         default=VerificationStatus.PENDING
     )
+    owner_name = models.CharField(max_length=150, blank=True, null=True)
+    mobile_number = models.CharField(max_length=20, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    business_category = models.CharField(max_length=100, blank=True, null=True)
+    gst_number = models.CharField(max_length=50, blank=True, null=True)
+    business_license = models.FileField(upload_to='business_licenses/', blank=True, null=True)
+    gst_document = models.FileField(upload_to='gst_documents/', blank=True, null=True)
+    tax_document = models.FileField(upload_to='tax_documents/', blank=True, null=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.PENDING
+    )
+    is_verified = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='approved_businesses'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True, null=True)
+    verification_requested_at = models.DateTimeField(null=True, blank=True)
+    verification_updated_at = models.DateTimeField(null=True, blank=True)
+
     reputation_score = models.DecimalField(max_digits=5, decimal_places=2, default=100.00)
     latitude = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True)
     longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
@@ -28,6 +56,15 @@ class BusinessProfile(models.Model):
 
     def __str__(self):
         return self.company_name
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and hasattr(self, 'user') and self.user:
+            if self.user.status in ['approved', 'APPROVED']:
+                self.status = 'APPROVED'
+                self.is_verified = True
+                self.is_active = True
+                self.verification_status = 'verified'
+        super().save(*args, **kwargs)
 
 
 class Earning(models.Model):

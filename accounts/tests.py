@@ -28,7 +28,11 @@ class AuthenticationTests(APITestCase):
             "email": "business@shiftly.com",
             "password": "strongpassword123",
             "role": "business",
-            "company_name": "Acme Corp"
+            "company_name": "Acme Corp",
+            "owner_name": "John Doe",
+            "mobile_number": "+1 (555) 019-2834",
+            "address": "123 Main St",
+            "business_category": "Food Services"
         }
 
     def test_student_registration(self):
@@ -141,6 +145,10 @@ class AuthenticationTests(APITestCase):
         business_user.status = User.AccountStatus.APPROVED
         business_user.is_active = True
         business_user.save(update_fields=['status', 'is_active'])
+        
+        profile = business_user.business_profile
+        profile.status = 'APPROVED'
+        profile.save()
 
         business_login = self.client.post(self.login_url, {
             "email": self.business_data['email'],
@@ -224,6 +232,10 @@ class HTMLAuthenticationTests(TestCase):
             "email": "testbusiness@shiftly.com",
             "role": "business",
             "company_name": "Red Coffee Corp",
+            "owner_name": "Sarah Smith",
+            "mobile_number": "+1 (555) 019-2834",
+            "address": "123 Main St",
+            "business_category": "Food Services",
             "password": "strongpassword123",
             "confirm_password": "strongpassword123"
         }
@@ -265,7 +277,7 @@ class HTMLAuthenticationTests(TestCase):
             status=self.user_model.AccountStatus.APPROVED,
             is_active=True
         )
-        BusinessProfile.objects.create(user=user, company_name="Red Coffee")
+        BusinessProfile.objects.create(user=user, company_name="Red Coffee", status='APPROVED')
 
         # Login
         post_data = {

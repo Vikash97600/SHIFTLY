@@ -3,7 +3,8 @@ from .views import (
     AdminDashboardView, AdminUsersView, AdminBusinessesView, AdminJobsView,
     AdminVerificationsView, AdminReportsView, AdminToggleUserActiveView,
     AdminVerifyRequestActionView, AdminJobModerationActionView, AdminReportResolveActionView,
-    AdminBusinessApprovalActionView, AdminReputationView, AdminRecalculateReputationActionView
+    AdminBusinessApprovalActionView, AdminReputationView, AdminRecalculateReputationActionView,
+    AdminExportVerificationsCSVView
 )
 
 urlpatterns = [
@@ -12,6 +13,7 @@ urlpatterns = [
     path('businesses/', AdminBusinessesView.as_view(), name='admin_businesses'),
     path('jobs/', AdminJobsView.as_view(), name='admin_jobs'),
     path('verifications/', AdminVerificationsView.as_view(), name='admin_verifications'),
+    path('verifications/export/', AdminExportVerificationsCSVView.as_view(), name='admin_export_verifications'),
     path('reports/', AdminReportsView.as_view(), name='admin_reports'),
     path('reputation/', AdminReputationView.as_view(), name='admin_reputation'),
     

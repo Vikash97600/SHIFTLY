@@ -61,6 +61,36 @@ class RegisterForm(forms.ModelForm):
         'class': 'form-control bg-dark border-secondary text-light',
         'placeholder': 'Red Coffee'
     }))
+    owner_name = forms.CharField(required=False, widget=forms.TextInput(attrs={
+        'class': 'form-control bg-dark border-secondary text-light',
+        'placeholder': 'John Doe'
+    }))
+    mobile_number = forms.CharField(required=False, widget=forms.TextInput(attrs={
+        'class': 'form-control bg-dark border-secondary text-light',
+        'placeholder': '+1 (555) 019-2834'
+    }))
+    address = forms.CharField(required=False, widget=forms.Textarea(attrs={
+        'class': 'form-control bg-dark border-secondary text-light',
+        'placeholder': '123 Main St, Suite 100, City, State, ZIP',
+        'rows': 3
+    }))
+    business_category = forms.CharField(required=False, widget=forms.TextInput(attrs={
+        'class': 'form-control bg-dark border-secondary text-light',
+        'placeholder': 'Food Services, Retail, Tech, etc.'
+    }))
+    gst_number = forms.CharField(required=False, widget=forms.TextInput(attrs={
+        'class': 'form-control bg-dark border-secondary text-light',
+        'placeholder': 'GSTIN123456789 (Optional)'
+    }))
+    business_license = forms.FileField(required=False, widget=forms.FileInput(attrs={
+        'class': 'form-control bg-dark border-secondary text-light'
+    }))
+    gst_document = forms.FileField(required=False, widget=forms.FileInput(attrs={
+        'class': 'form-control bg-dark border-secondary text-light'
+    }))
+    tax_document = forms.FileField(required=False, widget=forms.FileInput(attrs={
+        'class': 'form-control bg-dark border-secondary text-light'
+    }))
 
     class Meta:
         model = User
@@ -93,6 +123,14 @@ class RegisterForm(forms.ModelForm):
         elif role == User.Role.BUSINESS:
             if not cleaned_data.get('company_name'):
                 raise forms.ValidationError(_("Company name is required for business accounts."))
+            if not cleaned_data.get('owner_name'):
+                raise forms.ValidationError(_("Owner name is required for business accounts."))
+            if not cleaned_data.get('mobile_number'):
+                raise forms.ValidationError(_("Mobile number is required for business accounts."))
+            if not cleaned_data.get('address'):
+                raise forms.ValidationError(_("Address is required for business accounts."))
+            if not cleaned_data.get('business_category'):
+                raise forms.ValidationError(_("Business category is required for business accounts."))
 
         return cleaned_data
 

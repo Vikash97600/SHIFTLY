@@ -1,85 +1,369 @@
 {% extends 'adminpanel/base.html' %}
+{% load static %}
 
-{% block title %}Verifications Requests - SHIFTLY Admin Panel{% endblock %}
+{% block title %}Verification Queue - SHIFTLY Admin Panel{% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0">
-    <div class="mb-5">
-        <h1 class="text-white mb-1">Verification Requests Desk</h1>
-        <p class="text-muted mb-0">Verify user identities, business licenses, tax documents, and issue badges.</p>
+    <!-- Header -->
+    <div class="mb-5 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="text-white mb-1"><i class="bi bi-patch-check-fill text-gradient-coral"></i> Verification Management Center</h1>
+            <p class="text-muted mb-0">Monitor business authentication requests, review licenses/tax documents, and issue badges.</p>
+        </div>
+        <div>
+            <a href="{% url 'admin_export_verifications' %}" class="btn btn-premium-coral rounded-pill"><i class="bi bi-file-earmark-spreadsheet"></i> Export Full Dataset</a>
+        </div>
     </div>
 
-    <div class="dash-card p-4">
-        {% if requests %}
-            <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent; --bs-table-border-color: var(--dark-border);">
-                    <thead>
-                        <tr class="text-muted">
-                            <th>Applicant User</th>
-                            <th>Document Type</th>
-                            <th>Credentials Attachment</th>
-                            <th>Submission Time</th>
-                            <th>Verification Status</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for req in requests %}
-                            <tr id="req-row-{{ req.id }}">
-                                <td>
-                                    <div class="fw-semibold text-white">{{ req.user.email }}</div>
-                                    <span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill text-xs">Role: {{ req.user.role|capfirst }}</span>
-                                </td>
-                                <td><span class="text-white">{{ req.get_document_type_display }}</span></td>
-                                <td>
-                                    <a href="{{ req.document_url }}" target="_blank" class="btn btn-sm btn-dark border border-secondary border-opacity-25 rounded-pill px-3"><i class="bi bi-file-earmark-text text-primary"></i> Open Document</a>
-                                </td>
-                                <td class="text-muted">{{ req.submitted_at|date:"M d, Y H:i" }}</td>
-                                <td id="req-status-{{ req.id }}">
+    <!-- Analytics Dashboard Cards -->
+    <div class="row g-4 mb-5">
+        <!-- Pending Verifications -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="dash-card p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold uppercase tracking-wider">Pending Verifications</span>
+                        <h2 class="text-white mt-2 mb-1 fw-bold">{{ pending_count }}</h2>
+                        <span class="text-warning small"><i class="bi bi-clock-history"></i> Businesses Awaiting Review</span>
+                    </div>
+                    <div class="stats-icon bg-warning bg-opacity-10 text-warning rounded-3 p-3">
+                        <i class="bi bi-hourglass-split fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Today -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="dash-card p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold uppercase tracking-wider">Approved Today</span>
+                        <h2 class="text-white mt-2 mb-1 fw-bold">{{ approved_today_count }}</h2>
+                        <span class="text-success small"><i class="bi bi-patch-check"></i> Businesses Verified Today</span>
+                    </div>
+                    <div class="stats-icon bg-success bg-opacity-10 text-success rounded-3 p-3">
+                        <i class="bi bi-calendar-check fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rejected Requests (with Filter) -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="dash-card p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold uppercase tracking-wider">Rejected Requests</span>
+                        <div class="d-flex align-items-baseline gap-2 mt-2 mb-1">
+                            <h2 class="text-white mb-0 fw-bold" id="rejected-count-val">{{ rejected_all_time }}</h2>
+                            <span class="text-muted text-xs" id="rejected-filter-label">(All Time)</span>
+                        </div>
+                        <!-- Inner Card Filter -->
+                        <div class="dropdown mt-2">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill text-xs px-2.5 py-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Filter Rejections
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-dark">
+                                <li><a class="dropdown-item rejected-filter-opt" href="#" data-val="{{ rejected_today }}" data-label="Today">Today</a></li>
+                                <li><a class="dropdown-item rejected-filter-opt" href="#" data-val="{{ rejected_week }}" data-label="This Week">This Week</a></li>
+                                <li><a class="dropdown-item rejected-filter-opt" href="#" data-val="{{ rejected_month }}" data-label="This Month">This Month</a></li>
+                                <li><a class="dropdown-item rejected-filter-opt" href="#" data-val="{{ rejected_all_time }}" data-label="All Time">All Time</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="stats-icon bg-danger bg-opacity-10 text-danger rounded-3 p-3">
+                        <i class="bi bi-x-octagon fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents Awaiting Review -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="dash-card p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold uppercase tracking-wider">Documents Awaiting Review</span>
+                        <h2 class="text-white mt-2 mb-1 fw-bold">{{ docs_awaiting_review }}</h2>
+                        <span class="text-info small"><i class="bi bi-file-earmark-pdf"></i> Pending Manual Assessment</span>
+                    </div>
+                    <div class="stats-icon bg-info bg-opacity-10 text-info rounded-3 p-3">
+                        <i class="bi bi-files fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Average Approval Time -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="dash-card p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold uppercase tracking-wider">Average Approval Time</span>
+                        <h2 class="text-white mt-2 mb-1 fw-bold fs-4">{{ avg_time_str }}</h2>
+                        <span class="text-muted small"><i class="bi bi-speedometer2"></i> Registration to Approval</span>
+                    </div>
+                    <div class="stats-icon bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                        <i class="bi bi-stopwatch fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verified Businesses Count -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="dash-card p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold uppercase tracking-wider">Verified Businesses</span>
+                        <h2 class="text-white mt-2 mb-1 fw-bold">{{ verified_count }}</h2>
+                        <span class="text-gradient-coral small"><i class="bi bi-patch-check-fill"></i> Active verified badges</span>
+                    </div>
+                    <div class="stats-icon bg-success bg-opacity-10 text-success rounded-3 p-3">
+                        <i class="bi bi-building fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="dash-card p-4 mb-5">
+        <h5 class="text-white mb-3"><i class="bi bi-lightning-charge"></i> Quick Verification Actions</h5>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="?tab=pending" class="btn btn-sm btn-outline-warning rounded-pill {% if active_tab == 'pending' %}active{% endif %}"><i class="bi bi-hourglass"></i> View Pending Verifications</a>
+            <a href="?tab=approved" class="btn btn-sm btn-outline-success rounded-pill {% if active_tab == 'approved' %}active{% endif %}"><i class="bi bi-building-check"></i> View Approved Businesses</a>
+            <a href="?tab=rejected" class="btn btn-sm btn-outline-danger rounded-pill {% if active_tab == 'rejected' %}active{% endif %}"><i class="bi bi-x-octagon"></i> View Rejected Requests</a>
+            <button id="scroll-to-list-btn" class="btn btn-sm btn-outline-info rounded-pill"><i class="bi bi-eye"></i> Review Uploaded Documents</button>
+            <a href="{% url 'admin_export_verifications' %}" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bi bi-download"></i> Download Verification Report</a>
+        </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="dash-card p-4 mb-5" id="assessment-desk">
+        <h5 class="text-white mb-4"><i class="bi bi-funnel"></i> Filters & Query Panel</h5>
+        <form method="GET" action="" class="row g-3">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+            
+            <div class="col-12 col-md-4">
+                <label class="form-label text-muted small">Search Business / Owner</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary border-opacity-20 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control bg-dark border-secondary border-opacity-20 text-white" placeholder="Name, Email, Mobile..." value="{{ search_query }}">
+                </div>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted small">Advanced Filters</label>
+                <select name="filter" class="form-select bg-dark border-secondary border-opacity-20 text-white">
+                    <option value="">Status Match Tab</option>
+                    <option value="pending" {% if filter_type == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if filter_type == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if filter_type == 'rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="documents_missing" {% if filter_type == 'documents_missing' %}selected{% endif %}>Documents Missing</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label text-muted small">Sort By</label>
+                <select name="sort" class="form-select bg-dark border-secondary border-opacity-20 text-white">
+                    <option value="">Newest Submissions</option>
+                    <option value="recently_registered" {% if sort_by == 'recently_registered' %}selected{% endif %}>Recently Registered</option>
+                    <option value="oldest_pending" {% if sort_by == 'oldest_pending' %}selected{% endif %}>Oldest Pending</option>
+                    <option value="newest_requests" {% if sort_by == 'newest_requests' %}selected{% endif %}>Newest Requests</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-premium-coral w-100 py-2 rounded-pill"><i class="bi bi-search"></i> Search</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <ul class="nav nav-tabs border-secondary border-opacity-10 mb-4" id="verificationTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'pending' %}active text-warning fw-semibold{% else %}text-muted{% endif %} px-4" href="?tab=pending{% if search_query %}&search={{ search_query }}{% endif %}{% if filter_type %}&filter={{ filter_type }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                <i class="bi bi-hourglass-split"></i> Pending Verifications <span class="badge bg-warning bg-opacity-10 text-warning ms-1">{{ pending_count }}</span>
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'approved' %}active text-success fw-semibold{% else %}text-muted{% endif %} px-4" href="?tab=approved{% if search_query %}&search={{ search_query }}{% endif %}{% if filter_type %}&filter={{ filter_type }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                <i class="bi bi-check-circle"></i> Approved Businesses <span class="badge bg-success bg-opacity-10 text-success ms-1">{{ verified_count }}</span>
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'rejected' %}active text-danger fw-semibold{% else %}text-muted{% endif %} px-4" href="?tab=rejected{% if search_query %}&search={{ search_query }}{% endif %}{% if filter_type %}&filter={{ filter_type }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                <i class="bi bi-x-octagon"></i> Rejected Requests
+            </a>
+        </li>
+    </ul>
+
+    <!-- Request Cards Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5" id="businesses-list">
+        {% if businesses %}
+            {% for biz in businesses %}
+                <div class="col" id="biz-card-{{ biz.id }}">
+                    <div class="card h-100 bg-glass border border-secondary border-opacity-10 rounded-4 overflow-hidden">
+                        <div class="card-header bg-dark bg-opacity-20 border-bottom border-secondary border-opacity-10 p-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="business-logo rounded-3 d-flex align-items-center justify-content-center text-white" style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary-indigo) 0%, var(--primary-coral) 100%);">
+                                    {% if biz.company_logo_url %}
+                                        <img src="{{ biz.company_logo_url }}" class="img-fluid rounded-3" alt="Logo">
+                                    {% else %}
+                                        <i class="bi bi-building fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="overflow-hidden">
+                                    <h5 class="text-white text-truncate mb-0" title="{{ biz.company_name }}">{{ biz.company_name }}</h5>
+                                    <span class="text-muted text-xs"><i class="bi bi-tag"></i> {{ biz.business_category|default:"General Industry" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-column gap-3 text-sm">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="text-muted"><i class="bi bi-person text-xs me-1"></i> Owner</span>
+                                    <span class="text-white fw-semibold">{{ biz.owner_name|default:"Not Provided" }}</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="text-muted"><i class="bi bi-envelope text-xs me-1"></i> Email</span>
+                                    <span class="text-white-50 text-truncate" style="max-width: 180px;">{{ biz.user.email }}</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="text-muted"><i class="bi bi-phone text-xs me-1"></i> Phone</span>
+                                    <span class="text-white-50">{{ biz.mobile_number|default:"Not Provided" }}</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="text-muted"><i class="bi bi-geo-alt text-xs me-1"></i> Address</span>
+                                    <span class="text-white-50 text-truncate" style="max-width: 180px;" title="{{ biz.address }}">{{ biz.address|default:"Not Provided" }}</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="text-muted"><i class="bi bi-calendar-event text-xs me-1"></i> Registered</span>
+                                    <span class="text-muted">{{ biz.created_at|date:"M d, Y" }}</span>
+                                </div>
+                                
+                                <hr class="border-secondary border-opacity-10 my-2">
+
+                                <!-- Verification Documents -->
+                                <div>
+                                    <span class="text-white fw-semibold d-block mb-2">Uploaded Verification Files:</span>
+                                    <div class="d-flex flex-column gap-2">
+                                        <!-- License -->
+                                        <div class="d-flex align-items-center justify-content-between bg-dark bg-opacity-40 p-2 rounded border border-secondary border-opacity-10">
+                                            <span class="text-muted text-xs"><i class="bi bi-file-earmark-check text-primary me-1"></i> License Document</span>
+                                            {% if biz.business_license %}
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-dark text-primary preview-btn" data-url="{{ biz.business_license.url }}" data-name="Business License - {{ biz.company_name }}"><i class="bi bi-eye"></i></button>
+                                                    <a href="{{ biz.business_license.url }}" download class="btn btn-dark text-muted"><i class="bi bi-download"></i></a>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-danger text-xs"><i class="bi bi-exclamation-triangle"></i> Missing</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- GST Certificate -->
+                                        <div class="d-flex align-items-center justify-content-between bg-dark bg-opacity-40 p-2 rounded border border-secondary border-opacity-10">
+                                            <span class="text-muted text-xs"><i class="bi bi-file-earmark-check text-info me-1"></i> GST Certificate</span>
+                                            {% if biz.gst_document %}
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-dark text-info preview-btn" data-url="{{ biz.gst_document.url }}" data-name="GST Certificate - {{ biz.company_name }}"><i class="bi bi-eye"></i></button>
+                                                    <a href="{{ biz.gst_document.url }}" download class="btn btn-dark text-muted"><i class="bi bi-download"></i></a>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted text-xs">Not Provided</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Tax Document -->
+                                        <div class="d-flex align-items-center justify-content-between bg-dark bg-opacity-40 p-2 rounded border border-secondary border-opacity-10">
+                                            <span class="text-muted text-xs"><i class="bi bi-file-earmark-check text-warning me-1"></i> Tax Document</span>
+                                            {% if biz.tax_document %}
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-dark text-warning preview-btn" data-url="{{ biz.tax_document.url }}" data-name="Tax Document - {{ biz.company_name }}"><i class="bi bi-eye"></i></button>
+                                                    <a href="{{ biz.tax_document.url }}" download class="btn btn-dark text-muted"><i class="bi bi-download"></i></a>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted text-xs">Not Provided</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Current Status -->
+                                <div class="d-flex align-items-center justify-content-between mt-2">
+                                    <span class="text-muted">Verification Status</span>
                                     <span class="badge 
-                                        {% if req.status == 'approved' %}bg-success
-                                        {% elif req.status == 'pending' %}bg-warning
+                                        {% if biz.status == 'APPROVED' %}bg-success
+                                        {% elif biz.status == 'PENDING' %}bg-warning
                                         {% else %}bg-danger{% endif %} 
                                         bg-opacity-10 
-                                        text-{% if req.status == 'approved' %}success{% elif req.status == 'pending' %}warning{% else %}danger{% endif %} 
+                                        text-{% if biz.status == 'APPROVED' %}success{% elif biz.status == 'PENDING' %}warning{% else %}danger{% endif %} 
                                         px-2.5 py-1.5 rounded-pill">
-                                        {{ req.get_status_display }}
+                                        {{ biz.get_status_display }}
                                     </span>
-                                </td>
-                                <td class="text-end" id="req-actions-{{ req.id }}">
-                                    {% if req.status == 'pending' %}
-                                        <button class="btn btn-sm btn-premium-outline rounded-pill approve-btn me-1" data-id="{{ req.id }}"><i class="bi bi-check-circle"></i> Approve</button>
-                                        <button class="btn btn-sm btn-outline-danger rounded-pill reject-btn" data-id="{{ req.id }}" data-bs-toggle="modal" data-bs-target="#rejectModal"><i class="bi bi-x-circle"></i> Reject</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions footer -->
+                        <div class="card-footer bg-dark bg-opacity-20 border-top border-secondary border-opacity-10 p-4">
+                            {% if biz.status == 'PENDING' %}
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-success btn-sm rounded-pill w-100 approve-biz-btn" data-id="{{ biz.id }}"><i class="bi bi-check-circle"></i> Approve</button>
+                                    <button class="btn btn-outline-danger btn-sm rounded-pill w-100 reject-biz-btn" data-id="{{ biz.id }}" data-bs-toggle="modal" data-bs-target="#rejectModal"><i class="bi bi-x-circle"></i> Reject</button>
+                                </div>
+                            {% else %}
+                                <div class="text-xs text-muted">
+                                    {% if biz.status == 'APPROVED' %}
+                                        <div class="text-success fw-semibold"><i class="bi bi-patch-check-fill"></i> Verified badge issued</div>
+                                        <div>Approved by: {{ biz.approved_by.email }}</div>
+                                        <div>On: {{ biz.approved_at|date:"M d, Y H:i" }}</div>
                                     {% else %}
-                                        <button class="btn btn-sm btn-outline-secondary rounded-pill" disabled>{{ req.get_status_display }}</button>
+                                        <div class="text-danger fw-semibold"><i class="bi bi-x-octagon-fill"></i> Verification Rejected</div>
+                                        <div>Reason: {{ biz.rejection_reason }}</div>
+                                        <div>On: {{ biz.verification_updated_at|date:"M d, Y H:i" }}</div>
                                     {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            {% if is_paginated %}
-                <nav class="mt-4 d-flex justify-content-center">
-                    <ul class="pagination pagination-sm">
-                        {% if page_obj.has_previous %}
-                            <li class="page-item"><a class="page-link bg-dark border-secondary border-opacity-10 text-white" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
-                        {% endif %}
-                        <li class="page-item disabled"><span class="page-link bg-dark border-secondary border-opacity-10 text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
-                        {% if page_obj.has_next %}
-                            <li class="page-item"><a class="page-link bg-dark border-secondary border-opacity-10 text-white" href="?page={{ page_obj.next_page_number }}">Next</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-patch-check text-muted display-4"></i>
-                <h5 class="text-white mt-3">No verifications found</h5>
-                <p class="text-muted small mb-0">Identity and licensing verification tasks will appear here.</p>
+            <div class="col-12 w-100 text-center py-5">
+                <i class="bi bi-building-exclamation text-muted display-4"></i>
+                <h5 class="text-white mt-3">No verifications requests found</h5>
+                <p class="text-muted small mb-0">There are no verification requests in this tab matching your filters.</p>
             </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- DOCUMENT PREVIEW MODAL -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-glass border border-secondary border-opacity-25" style="background-color: #0b0f19;">
+            <div class="modal-header border-secondary border-opacity-10">
+                <h5 class="modal-title text-white" id="previewModalLabel"><i class="bi bi-file-earmark-medical"></i> Document Preview</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 500px;">
+                <iframe id="preview-iframe" src="" class="w-100 h-100 d-none border-0"></iframe>
+                <div id="preview-img-container" class="w-100 h-100 d-none d-flex align-items-center justify-content-center bg-dark bg-opacity-50 p-3">
+                    <img id="preview-img" src="" class="img-fluid rounded border border-secondary border-opacity-10 shadow" style="max-height: 100%;">
+                </div>
+                <div id="preview-unsupported" class="w-100 h-100 d-none d-flex flex-column align-items-center justify-content-center text-muted p-4">
+                    <i class="bi bi-file-earmark-x display-4"></i>
+                    <h5 class="text-white mt-3">Preview Not Available</h5>
+                    <p class="small text-muted mb-3">This file type cannot be previewed in the browser.</p>
+                    <a id="preview-fallback-link" href="" class="btn btn-premium-coral btn-sm rounded-pill px-4" download><i class="bi bi-download"></i> Download File</a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -88,14 +372,14 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-glass border border-secondary border-opacity-25" style="background-color: #0b0f19;">
             <div class="modal-header border-secondary border-opacity-10">
-                <h5 class="modal-title text-white" id="rejectModalLabel"><i class="bi bi-exclamation-triangle text-danger"></i> Reject Verification Request</h5>
+                <h5 class="modal-title text-white" id="rejectModalLabel"><i class="bi bi-exclamation-triangle text-danger"></i> Reject Business Verification</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="rejection-form">
                     <div class="mb-3">
-                        <label for="rejection-reason" class="form-label text-muted">Please state the rejection details/reasoning:</label>
-                        <textarea id="rejection-reason" class="form-control bg-dark border-secondary border-opacity-20 text-white" rows="4" placeholder="e.g. Document image is blurry, license expired..." required></textarea>
+                        <label for="rejection-reason" class="form-label text-muted">Please input the rejection reason details:</label>
+                        <textarea id="rejection-reason" class="form-control bg-dark border-secondary border-opacity-20 text-white" rows="4" placeholder="e.g. Incomplete documents, expired license, GST certificate blurred..." required></textarea>
                     </div>
                 </form>
             </div>
@@ -119,51 +403,109 @@
         const rejectModalElement = document.getElementById("rejectModal");
         const rejectModal = new bootstrap.Modal(rejectModalElement);
         
-        let activeRequestId = null;
+        const previewModalElement = document.getElementById("previewModal");
+        const previewModal = new bootstrap.Modal(previewModalElement);
+
+        let activeBusinessId = null;
+
+        // Rejected filter stats card options
+        document.querySelectorAll(".rejected-filter-opt").forEach(opt => {
+            opt.addEventListener("click", (e) => {
+                e.preventDefault();
+                const val = opt.getAttribute("data-val");
+                const label = opt.getAttribute("data-label");
+                document.getElementById("rejected-count-val").innerText = val;
+                document.getElementById("rejected-filter-label").innerText = `(${label})`;
+            });
+        });
+
+        // Quick Actions - scroll to desk
+        document.getElementById("scroll-to-list-btn").addEventListener("click", () => {
+            document.getElementById("assessment-desk").scrollIntoView({ behavior: 'smooth' });
+        });
 
         // Listen for open rejection modal actions
         rejectModalElement.addEventListener("show.bs.modal", (e) => {
             const btn = e.relatedTarget;
-            activeRequestId = btn.getAttribute("data-id");
+            activeBusinessId = btn.getAttribute("data-id");
             document.getElementById("rejection-reason").value = "";
         });
 
-        // Delegate listener to handle verification approvals
-        document.querySelector("table tbody").addEventListener("click", (e) => {
-            const btn = e.target.closest(".approve-btn");
-            if (!btn) return;
+        // Handle document preview loading
+        document.querySelectorAll(".preview-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const url = btn.getAttribute("data-url");
+                const name = btn.getAttribute("data-name");
+                
+                document.getElementById("previewModalLabel").innerHTML = `<i class="bi bi-file-earmark-medical text-gradient-coral"></i> ${name}`;
+                
+                const iframe = document.getElementById("preview-iframe");
+                const img = document.getElementById("preview-img");
+                const imgContainer = document.getElementById("preview-img-container");
+                const unsupported = document.getElementById("preview-unsupported");
+                const fallbackLink = document.getElementById("preview-fallback-link");
+                
+                // Hide all initially
+                iframe.classList.add("d-none");
+                imgContainer.classList.add("d-none");
+                unsupported.classList.add("d-none");
 
-            const reqId = btn.getAttribute("data-id");
-
-            const formData = new FormData();
-            formData.append('csrfmiddlewaretoken', csrfToken);
-            formData.append('status', 'approved');
-
-            btn.disabled = true;
-
-            fetch(`/api/v1/adminpanel/verifications/action/${reqId}/`, {
-                method: "POST",
-                body: formData,
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                btn.disabled = false;
-                if (data.success) {
-                    const statusCol = document.getElementById(`req-status-${reqId}`);
-                    const actionsCol = document.getElementById(`req-actions-${reqId}`);
-
-                    statusCol.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1.5 rounded-pill">Approved</span>`;
-                    actionsCol.innerHTML = `<button class="btn btn-sm btn-outline-secondary rounded-pill" disabled>Approved</button>`;
+                const extension = url.split('.').pop().toLowerCase();
+                
+                if (extension === 'pdf') {
+                    iframe.src = url;
+                    iframe.classList.remove("d-none");
+                    previewModal.show();
+                } else if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension)) {
+                    img.src = url;
+                    imgContainer.classList.remove("d-none");
+                    previewModal.show();
                 } else {
-                    alert("Error: " + (data.error || "Failed to approve verification."));
+                    fallbackLink.href = url;
+                    unsupported.classList.remove("d-none");
+                    previewModal.show();
                 }
-            })
-            .catch(err => {
-                btn.disabled = false;
-                console.error("Action failed:", err);
+            });
+        });
+
+        // Cleanup preview src on modal hide
+        previewModalElement.addEventListener("hide.bs.modal", () => {
+            document.getElementById("preview-iframe").src = "";
+            document.getElementById("preview-img").src = "";
+        });
+
+        // Handle verification approvals
+        document.querySelectorAll(".approve-biz-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const bizId = btn.getAttribute("data-id");
+
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', csrfToken);
+                formData.append('action', 'approve');
+
+                btn.disabled = true;
+
+                fetch(`/api/v1/adminpanel/businesses/action/${bizId}/`, {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    if (data.success) {
+                        // Refresh to update analytics card counts and list states
+                        window.location.reload();
+                    } else {
+                        alert("Error: " + (data.error || "Failed to approve business verification."));
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    console.error("Action failed:", err);
+                });
             });
         });
 
@@ -174,14 +516,14 @@
 
             const formData = new FormData();
             formData.append('csrfmiddlewaretoken', csrfToken);
-            formData.append('status', 'rejected');
+            formData.append('action', 'reject');
             formData.append('reason', reason);
 
             const submitBtn = document.getElementById("submit-rejection-btn");
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...`;
 
-            fetch(`/api/v1/adminpanel/verifications/action/${activeRequestId}/`, {
+            fetch(`/api/v1/adminpanel/businesses/action/${activeBusinessId}/`, {
                 method: "POST",
                 body: formData,
                 headers: {
@@ -195,13 +537,10 @@
                 rejectModal.hide();
                 
                 if (data.success) {
-                    const statusCol = document.getElementById(`req-status-${activeRequestId}`);
-                    const actionsCol = document.getElementById(`req-actions-${activeRequestId}`);
-
-                    statusCol.innerHTML = `<span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1.5 rounded-pill">Rejected</span>`;
-                    actionsCol.innerHTML = `<button class="btn btn-sm btn-outline-secondary rounded-pill" disabled>Rejected</button>`;
+                    // Refresh to update analytics card counts and list states
+                    window.location.reload();
                 } else {
-                    alert("Error: " + (data.error || "Failed to reject verification."));
+                    alert("Error: " + (data.error || "Failed to reject business verification."));
                 }
             })
             .catch(err => {

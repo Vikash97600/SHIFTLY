@@ -17,10 +17,10 @@ def create_business_registration_notifications(business_user, business_profile):
     if not admins.exists():
         return
 
-    title = "New Business Registration Received"
+    title = "🔔 New Business Registration"
     body = (
-        f"{business_profile.company_name} has registered on Shiftly. "
-        "Waiting for Admin Approval."
+        f"{business_profile.company_name} has requested verification.\n"
+        "Waiting for approval."
     )
     payload = {
         "business_id": business_user.id,
@@ -41,18 +41,17 @@ def create_business_registration_notifications(business_user, business_profile):
 
 def create_account_decision_notification(user, approved, reason=""):
     if approved:
-        title = "Business Account Approved"
+        title = "🎉 Congratulations!"
         body = (
-            "Your business account has been approved. You can now sign in and access your dashboard."
+            "Your business has been verified.\n"
+            "You can now login and post jobs."
         )
     else:
-        title = "Business Account Rejected"
+        title = "Verification Request Rejected"
         body = (
-            "Your business account registration was not approved. "
-            "Please contact support for more information."
+            "Your verification request has been rejected.\n"
+            f"Reason:\n{reason if reason else 'Incomplete documents.'}"
         )
-        if reason:
-            body = f"{body} Reason: {reason}"
 
     Notification.objects.create(
         user=user,

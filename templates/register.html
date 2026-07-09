@@ -90,7 +90,7 @@
             <p class="text-muted small">Sign up to find instant shifts or hire local talent</p>
         </div>
 
-        <form method="POST" action="">
+        <form method="POST" action="" enctype="multipart/form-data">
             {% csrf_token %}
 
             {% if form.non_field_errors %}
@@ -152,16 +152,120 @@
             </div>
 
             <!-- Business Owner Scaffold Fields -->
-            <div id="business-fields-group" class="mb-3 d-none">
-                <label for="id_company_name" class="form-label text-muted small fw-medium">Company Name</label>
-                {{ form.company_name }}
-                {% if form.company_name.errors %}
-                    <div class="text-danger small mt-1">
-                        {% for error in form.company_name.errors %}
-                            {{ error }}
-                        {% endfor %}
+            <div id="business-fields-group" class="d-none">
+                <div class="mb-3">
+                    <label for="id_company_name" class="form-label text-muted small fw-medium">Company Name</label>
+                    {{ form.company_name }}
+                    {% if form.company_name.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.company_name.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_owner_name" class="form-label text-muted small fw-medium">Owner Name</label>
+                    {{ form.owner_name }}
+                    {% if form.owner_name.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.owner_name.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label for="id_mobile_number" class="form-label text-muted small fw-medium">Mobile Number</label>
+                        {{ form.mobile_number }}
+                        {% if form.mobile_number.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.mobile_number.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
-                {% endif %}
+                    <div class="col-md-6">
+                        <label for="id_business_category" class="form-label text-muted small fw-medium">Business Category</label>
+                        {{ form.business_category }}
+                        {% if form.business_category.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.business_category.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_address" class="form-label text-muted small fw-medium">Business Address</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.address.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_gst_number" class="form-label text-muted small fw-medium">GST Number (Optional)</label>
+                    {{ form.gst_number }}
+                    {% if form.gst_number.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.gst_number.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Verification File Uploads -->
+                <div class="border border-secondary border-opacity-10 rounded-3 p-3 mb-3 bg-dark bg-opacity-25">
+                    <span class="text-white small fw-semibold d-block mb-3"><i class="bi bi-file-earmark-arrow-up"></i> Verification Documents (Optional)</span>
+                    
+                    <div class="mb-3">
+                        <label for="id_business_license" class="form-label text-muted small fw-medium">Business License</label>
+                        {{ form.business_license }}
+                        {% if form.business_license.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.business_license.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_gst_document" class="form-label text-muted small fw-medium">GST Certificate</label>
+                        {{ form.gst_document }}
+                        {% if form.gst_document.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.gst_document.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_tax_document" class="form-label text-muted small fw-medium">Tax Documents</label>
+                        {{ form.tax_document }}
+                        {% if form.tax_document.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.tax_document.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
             <div class="row mb-4">
@@ -215,14 +319,24 @@
                     // Toggle required flags dynamically
                     document.getElementById("id_first_name").required = true;
                     document.getElementById("id_last_name").required = true;
+                    
                     document.getElementById("id_company_name").required = false;
+                    document.getElementById("id_owner_name").required = false;
+                    document.getElementById("id_mobile_number").required = false;
+                    document.getElementById("id_address").required = false;
+                    document.getElementById("id_business_category").required = false;
                 } else if (selectedRole === "business") {
                     studentFields.classList.add("d-none");
                     businessFields.classList.remove("d-none");
                     
                     document.getElementById("id_first_name").required = false;
                     document.getElementById("id_last_name").required = false;
+                    
                     document.getElementById("id_company_name").required = true;
+                    document.getElementById("id_owner_name").required = true;
+                    document.getElementById("id_mobile_number").required = true;
+                    document.getElementById("id_address").required = true;
+                    document.getElementById("id_business_category").required = true;
                 }
             }
 

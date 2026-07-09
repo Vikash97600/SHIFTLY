@@ -182,7 +182,7 @@ class RegisterPageView(View):
         return render(request, self.template_name, {'form': form})
 
     def post(self, request):
-        form = RegisterForm(request.POST)
+        form = RegisterForm(request.POST, request.FILES)
         if form.is_valid():
             with transaction.atomic():
                 role = form.cleaned_data.get('role')
@@ -204,14 +204,52 @@ class RegisterPageView(View):
                         last_name=form.cleaned_data.get('last_name', '')
                     )
                 elif role == User.Role.BUSINESS:
+                    from django.utils import timezone
+                    from accounts.models import Verification
+
                     business_profile = BusinessProfile.objects.create(
                         user=user,
                         company_name=form.cleaned_data.get('company_name', ''),
-                        industry='Not Specified',
-                        business_registration_no=f"REG-{user.uuid.hex[:8].upper()}"
+                        owner_name=form.cleaned_data.get('owner_name', ''),
+                        mobile_number=form.cleaned_data.get('mobile_number', ''),
+                        address=form.cleaned_data.get('address', ''),
+                        business_category=form.cleaned_data.get('business_category', ''),
+                        gst_number=form.cleaned_data.get('gst_number', ''),
+                        business_license=form.cleaned_data.get('business_license'),
+                        gst_document=form.cleaned_data.get('gst_document'),
+                        tax_document=form.cleaned_data.get('tax_document'),
+                        status='PENDING',
+                        is_verified=False,
+                        is_active=False,
+                        verification_requested_at=timezone.now(),
+                        industry=form.cleaned_data.get('business_category', 'Not Specified'),
+                        business_registration_no=form.cleaned_data.get('gst_number') or f"REG-{user.uuid.hex[:8].upper()}"
                     )
                     from .utils import create_business_registration_notifications
                     create_business_registration_notifications(user, business_profile)
+
+                    # Create Verification models for uploads
+                    if business_profile.business_license:
+                        Verification.objects.create(
+                            user=user,
+                            document_type=Verification.DocumentType.BUSINESS_LICENSE,
+                            document_url=business_profile.business_license.url,
+                            status=Verification.Status.PENDING
+                        )
+                    if business_profile.gst_document:
+                        Verification.objects.create(
+                            user=user,
+                            document_type=Verification.DocumentType.TAX_DOCUMENT,
+                            document_url=business_profile.gst_document.url,
+                            status=Verification.Status.PENDING
+                        )
+                    if business_profile.tax_document:
+                        Verification.objects.create(
+                            user=user,
+                            document_type=Verification.DocumentType.TAX_DOCUMENT,
+                            document_url=business_profile.tax_document.url,
+                            status=Verification.Status.PENDING
+                        )
 
                 if role == User.Role.STUDENT:
                     auth_login(request, user)
